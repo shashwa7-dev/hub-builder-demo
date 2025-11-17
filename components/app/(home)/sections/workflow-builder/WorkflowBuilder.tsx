@@ -2184,10 +2184,10 @@ function WorkflowBuilderInner({
       </div>
 
       {/* Settings Panel */}
-      <SettingsPanel
+      {/* <SettingsPanel
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
-      />
+      /> */}
 
       {/* Share Workflow Modal */}
       <ShareWorkflowModal
