@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import PasteConfigModal from "./PasteConfigModal";
+import { Id } from "@/convex/_generated/dataModel";
 
 interface SettingsPanelProps {
   isOpen: boolean;
@@ -242,8 +243,8 @@ export default function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                         provider === "anthropic"
                           ? serverConfig?.anthropicConfigured
                           : provider === "openai"
-                          ? serverConfig?.openaiConfigured
-                          : serverConfig?.groqConfigured;
+                            ? serverConfig?.openaiConfigured
+                            : serverConfig?.groqConfigured;
 
                       return (
                         <div
@@ -1398,8 +1399,8 @@ function AddLLMKeyModal({
                   formData.provider === "anthropic"
                     ? "sk-ant-..."
                     : formData.provider === "openai"
-                    ? "sk-proj-..."
-                    : "gsk_..."
+                      ? "sk-proj-..."
+                      : "gsk_..."
                 }
                 className="w-full pr-32 px-12 py-8 bg-background-base border border-border-faint rounded-8 text-body-small text-accent-black font-mono"
               />

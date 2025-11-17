@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
     console.log(`Executing MCP server: ${serverName}, tool: ${tool}`);
     console.log("Params:", params);
 
-    // Generic MCP server execution
-    return await executeGenericMCP(serverUrl, tool, params, authToken);
+    // // Generic MCP server execution
+    // return await executeGenericMCP(serverUrl, tool, params, authToken);
   } catch (error) {
     console.error("MCP execution error:", error);
     return NextResponse.json(

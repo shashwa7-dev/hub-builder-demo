@@ -1,9 +1,14 @@
-import { NextRequest } from 'next/server';
-import { getConvexClient, getAuthenticatedConvexClient, api, isConvexConfigured } from '@/lib/convex/client';
-import { LangGraphExecutor } from '@/lib/workflow/langgraph';
-import { validateApiKey, createUnauthorizedResponse } from '@/lib/api/auth';
+import { NextRequest } from "next/server";
+import {
+  getConvexClient,
+  getAuthenticatedConvexClient,
+  api,
+  isConvexConfigured,
+} from "@/lib/convex/client";
+import { LangGraphExecutor } from "@/lib/workflow/langgraph";
+import { validateApiKey, createUnauthorizedResponse } from "@/lib/api/auth";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 /**
  * Streaming workflow execution with real-time updates
@@ -18,7 +23,9 @@ export async function POST(
   // Validate API key
   const authResult = await validateApiKey(request);
   if (!authResult.authenticated) {
-    return createUnauthorizedResponse(authResult.error || 'Authentication required');
+    return createUnauthorizedResponse(
+      authResult.error || "Authentication required"
+    );
   }
 
   const { workflowId } = await params;
@@ -32,7 +39,7 @@ export async function POST(
           const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
           controller.enqueue(encoder.encode(message));
         } catch (error) {
-          console.error('Failed to send SSE event:', error);
+          console.error("Failed to send SSE event:", error);
         }
       };
 
@@ -43,8 +50,8 @@ export async function POST(
 
         // Get workflow from Convex
         if (!isConvexConfigured()) {
-          sendEvent('error', {
-            error: 'Convex not configured',
+          sendEvent("error", {
+            error: "Convex not configured",
             workflowId,
           });
           controller.close();
@@ -54,12 +61,15 @@ export async function POST(
         const convex = await getAuthenticatedConvexClient();
 
         // Look up workflow - try customId first, then try as Convex ID
-        let workflowDoc = await convex.query(api.workflows.getWorkflowByCustomId, {
-          customId: workflowId,
-        });
+        let workflowDoc = await convex.query(
+          api.workflows.getWorkflowByCustomId,
+          {
+            customId: workflowId,
+          }
+        );
 
         // If not found by customId and looks like Convex ID, try direct lookup
-        if (!workflowDoc && workflowId.startsWith('j')) {
+        if (!workflowDoc && workflowId.startsWith("j")) {
           try {
             workflowDoc = await convex.query(api.workflows.getWorkflow, {
               id: workflowId as any,
@@ -70,7 +80,7 @@ export async function POST(
         }
 
         if (!workflowDoc) {
-          sendEvent('error', {
+          sendEvent("error", {
             error: `Workflow ${workflowId} not found`,
             workflowId,
           });
@@ -85,7 +95,7 @@ export async function POST(
         };
 
         if (!workflowData) {
-          sendEvent('error', {
+          sendEvent("error", {
             error: `Workflow ${workflowId} not found`,
             workflowId,
           });
@@ -96,7 +106,7 @@ export async function POST(
         const workflow = workflowData as any;
 
         // Send start event
-        sendEvent('workflow_started', {
+        sendEvent("workflow_started", {
           workflowId,
           workflowName: workflow.name,
           totalNodes: workflow.nodes.length,
@@ -108,26 +118,35 @@ export async function POST(
         const nodeResults: Record<string, any> = {};
 
         // Get API keys - check user keys first, then fall back to environment
-        const { getLLMApiKey } = await import('@/lib/api/llm-keys');
+        const { getLLMApiKey } = await import("@/lib/api/llm-keys");
         const userId = authResult.userId;
-        
+
         const apiKeys = {
-          anthropic: userId ? await getLLMApiKey('anthropic', userId) : null || process.env.ANTHROPIC_API_KEY,
-          groq: userId ? await getLLMApiKey('groq', userId) : null || process.env.GROQ_API_KEY,
-          openai: userId ? await getLLMApiKey('openai', userId) : null || process.env.OPENAI_API_KEY,
+          anthropic: userId
+            ? await getLLMApiKey("anthropic", userId)
+            : //@ts-ignore
+              null || process.env.ANTHROPIC_API_KEY,
+          groq: userId
+            ? await getLLMApiKey("groq", userId)
+            : //@ts-ignore
+              null || process.env.GROQ_API_KEY,
+          openai: userId
+            ? await getLLMApiKey("openai", userId)
+            : //@ts-ignore
+              null || process.env.OPENAI_API_KEY,
           firecrawl: process.env.FIRECRAWL_API_KEY, // Firecrawl keys are still environment-only for now
           arcade: process.env.ARCADE_API_KEY,
         };
 
         // Prepare initial input - pass as object if it's an object, otherwise as string
-        let initialInput: any = '';
-        if (typeof inputs === 'object' && Object.keys(inputs).length > 0) {
+        let initialInput: any = "";
+        if (typeof inputs === "object" && Object.keys(inputs).length > 0) {
           // If the body has an "input" field, extract it (common pattern from curl/API calls)
           // Otherwise use the body directly
           initialInput = inputs.input || inputs;
         } else {
           // Otherwise use url or input field
-          initialInput = inputs.url || inputs.input || '';
+          initialInput = inputs.url || inputs.input || "";
         }
 
         // LangGraph Execution Path
@@ -138,48 +157,55 @@ export async function POST(
           executor = new LangGraphExecutor(
             workflow,
             (nodeId, result) => {
-            nodeResults[nodeId] = result;
+              nodeResults[nodeId] = result;
 
-            if (result.status === 'running') {
-              const node = workflow.nodes.find((n: any) => n.id === nodeId);
-              sendEvent('node_started', {
-                nodeId,
-                nodeName: node?.data?.nodeName || node?.data?.label || nodeId,
-                nodeType: node?.type || 'unknown',
-                timestamp: new Date().toISOString(),
-              });
-            } else if (result.status === 'completed') {
-              const node = workflow.nodes.find((n: any) => n.id === nodeId);
-              sendEvent('node_completed', {
-                nodeId,
-                nodeName: node?.data?.nodeName || node?.data?.label || nodeId,
-                result,
-                timestamp: new Date().toISOString(),
-              });
-            } else if (result.status === 'failed') {
-              const node = workflow.nodes.find((n: any) => n.id === nodeId);
-              sendEvent('node_failed', {
-                nodeId,
-                nodeName: node?.data?.nodeName || node?.data?.label || nodeId,
-                error: result.error,
-                timestamp: new Date().toISOString(),
-              });
-            } else if (result.status === 'pending-authorization' || result.status === 'pending-approval') {
-              const node = workflow.nodes.find((n: any) => n.id === nodeId);
-              sendEvent('node_paused', {
-                nodeId,
-                nodeName: node?.data?.nodeName || node?.data?.label || nodeId,
-                status: result.status,
-                timestamp: new Date().toISOString(),
-              });
-            }
-          },
-          apiKeys
+              if (result.status === "running") {
+                const node = workflow.nodes.find((n: any) => n.id === nodeId);
+                sendEvent("node_started", {
+                  nodeId,
+                  nodeName: node?.data?.nodeName || node?.data?.label || nodeId,
+                  nodeType: node?.type || "unknown",
+                  timestamp: new Date().toISOString(),
+                });
+              } else if (result.status === "completed") {
+                const node = workflow.nodes.find((n: any) => n.id === nodeId);
+                sendEvent("node_completed", {
+                  nodeId,
+                  nodeName: node?.data?.nodeName || node?.data?.label || nodeId,
+                  result,
+                  timestamp: new Date().toISOString(),
+                });
+              } else if (result.status === "failed") {
+                const node = workflow.nodes.find((n: any) => n.id === nodeId);
+                sendEvent("node_failed", {
+                  nodeId,
+                  nodeName: node?.data?.nodeName || node?.data?.label || nodeId,
+                  error: result.error,
+                  timestamp: new Date().toISOString(),
+                });
+              } else if (
+                result.status === "pending-authorization" ||
+                result.status === "pending-approval"
+              ) {
+                const node = workflow.nodes.find((n: any) => n.id === nodeId);
+                sendEvent("node_paused", {
+                  nodeId,
+                  nodeName: node?.data?.nodeName || node?.data?.label || nodeId,
+                  status: result.status,
+                  timestamp: new Date().toISOString(),
+                });
+              }
+            },
+            //@ts-ignore
+            apiKeys
           );
         } catch (graphBuildError) {
-          console.error('❌ Failed to build LangGraph:', graphBuildError);
-          sendEvent('error', {
-            error: graphBuildError instanceof Error ? graphBuildError.message : 'Graph compilation failed',
+          console.error("❌ Failed to build LangGraph:", graphBuildError);
+          sendEvent("error", {
+            error:
+              graphBuildError instanceof Error
+                ? graphBuildError.message
+                : "Graph compilation failed",
             timestamp: new Date().toISOString(),
           });
           controller.close();
@@ -207,7 +233,7 @@ export async function POST(
 
             finalState = mergedState;
 
-            sendEvent('state_update', {
+            sendEvent("state_update", {
               nodeResults: mergedState.nodeResults,
               currentNodeId: mergedState.currentNodeId,
               pendingAuth: mergedState.pendingAuth,
@@ -216,8 +242,8 @@ export async function POST(
 
             // Check for pending auth/approval
             if (mergedState.pendingAuth) {
-              sendEvent('workflow_paused', {
-                reason: 'pending_authorization',
+              sendEvent("workflow_paused", {
+                reason: "pending_authorization",
                 pendingAuth: mergedState.pendingAuth,
                 executionId,
                 threadId,
@@ -232,9 +258,12 @@ export async function POST(
             }
           }
         } catch (streamError) {
-          console.error('Stream iteration error:', streamError);
-          sendEvent('error', {
-            error: streamError instanceof Error ? streamError.message : 'Stream error',
+          console.error("Stream iteration error:", streamError);
+          sendEvent("error", {
+            error:
+              streamError instanceof Error
+                ? streamError.message
+                : "Stream error",
             timestamp: new Date().toISOString(),
           });
           controller.close();
@@ -242,9 +271,9 @@ export async function POST(
         }
 
         // Send completion event
-        const status = finalState?.pendingAuth ? 'waiting-auth' : 'completed';
+        const status = finalState?.pendingAuth ? "waiting-auth" : "completed";
 
-        sendEvent('workflow_completed', {
+        sendEvent("workflow_completed", {
           workflowId,
           executionId,
           results: finalState?.nodeResults || {},
@@ -257,8 +286,8 @@ export async function POST(
 
         controller.close();
       } catch (error) {
-        sendEvent('error', {
-          error: error instanceof Error ? error.message : 'Unknown error',
+        sendEvent("error", {
+          error: error instanceof Error ? error.message : "Unknown error",
           timestamp: new Date().toISOString(),
         });
         controller.close();
@@ -268,10 +297,10 @@ export async function POST(
 
   return new Response(stream, {
     headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache, no-transform',
-      'Connection': 'keep-alive',
-      'X-Accel-Buffering': 'no', // Disable nginx buffering
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      Connection: "keep-alive",
+      "X-Accel-Buffering": "no", // Disable nginx buffering
     },
   });
 }
