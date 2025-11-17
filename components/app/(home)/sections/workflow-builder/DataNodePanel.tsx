@@ -37,7 +37,7 @@ const result = {
     data: input
 };
 
-return result;`,
+return result;`
   );
 
   // Set State variables
@@ -61,13 +61,7 @@ return result;`,
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [
-    transformScript,
-    stateKey,
-    stateValue,
-    valueType,
-  ]);
-
+  }, [transformScript, stateKey, stateValue, valueType]);
 
   const renderValueInput = () => {
     switch (valueType) {
@@ -185,8 +179,8 @@ return result;`,
               {nodeType.includes("transform")
                 ? "Transform data using JavaScript"
                 : nodeType.includes("state")
-                  ? "Set workflow state variables"
-                  : "Configure data operation"}
+                ? "Set workflow state variables"
+                : "Configure data operation"}
             </p>
           </div>
 
@@ -200,7 +194,8 @@ return result;`,
                     Transform Code (TypeScript)
                   </h3>
                   <p className="text-sm text-black-alpha-48 mb-16">
-                    Write TypeScript code to transform data. Runs securely in E2B sandbox.
+                    Write TypeScript code to transform data. Runs securely in
+                    E2B sandbox.
                   </p>
 
                   {/* Code Editor */}
@@ -211,9 +206,11 @@ return result;`,
                       </label>
                       <VariableReferencePicker
                         nodes={nodes}
-                        currentNodeId={node?.id || ''}
+                        currentNodeId={node?.id || ""}
                         onSelect={(varPath) => {
-                          setTransformScript(prev => prev + `\n// Access: ${varPath}\n`);
+                          setTransformScript(
+                            (prev) => prev + `\n// Access: ${varPath}\n`
+                          );
                         }}
                       />
                     </div>
@@ -228,11 +225,29 @@ return result;`,
                     <div className="mt-8 text-xs text-black-alpha-48 space-y-4">
                       <p>Available variables:</p>
                       <ul className="list-disc list-inside space-y-2 ml-8">
-                        <li><code className="px-4 py-1 bg-background-base rounded text-heat-100 font-mono">input</code> - Current input data</li>
-                        <li><code className="px-4 py-1 bg-background-base rounded text-heat-100 font-mono">lastOutput</code> - Output from previous node</li>
-                        <li><code className="px-4 py-1 bg-background-base rounded text-heat-100 font-mono">state</code> - Workflow state with variables</li>
+                        <li>
+                          <code className="px-4 py-1 bg-background-base rounded text-heat-100 font-mono">
+                            input
+                          </code>{" "}
+                          - Current input data
+                        </li>
+                        <li>
+                          <code className="px-4 py-1 bg-background-base rounded text-heat-100 font-mono">
+                            lastOutput
+                          </code>{" "}
+                          - Output from previous node
+                        </li>
+                        <li>
+                          <code className="px-4 py-1 bg-background-base rounded text-heat-100 font-mono">
+                            state
+                          </code>{" "}
+                          - Workflow state with variables
+                        </li>
                       </ul>
-                      <p className="mt-8">Your function should return an object with the transformed data.</p>
+                      <p className="mt-8">
+                        Your function should return an object with the
+                        transformed data.
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -267,7 +282,8 @@ return result;`,
                             className="w-full px-12 py-8 bg-accent-white border border-border-faint rounded-8 text-sm text-accent-black font-mono focus:outline-none focus:border-heat-100"
                           />
                           <p className="text-xs text-black-alpha-48 mt-4">
-                            Access later with <code className="px-4 py-1 bg-background-base rounded text-heat-100 font-mono text-xs">{`{{state.${stateKey}}}`}</code>
+                            Access later with{" "}
+                            <code className="px-4 py-1 bg-background-base rounded text-heat-100 font-mono text-xs">{`{{state.${stateKey}}}`}</code>
                           </p>
                         </div>
 
@@ -278,14 +294,18 @@ return result;`,
                           </label>
                           <select
                             value={valueType}
-                            onChange={(e) => setValueType(e.target.value as any)}
+                            onChange={(e) =>
+                              setValueType(e.target.value as any)
+                            }
                             className="w-full px-12 py-8 bg-accent-white border border-border-faint rounded-8 text-sm text-accent-black focus:outline-none focus:border-heat-100 transition-colors appearance-none cursor-pointer"
                           >
                             <option value="string">String</option>
                             <option value="number">Number</option>
                             <option value="boolean">Boolean</option>
                             <option value="json">JSON Object</option>
-                            <option value="expression">JavaScript Expression</option>
+                            <option value="expression">
+                              JavaScript Expression
+                            </option>
                           </select>
                         </div>
 
@@ -297,17 +317,23 @@ return result;`,
                             </label>
                             <VariableReferencePicker
                               nodes={nodes}
-                              currentNodeId={node?.id || ''}
-                              onSelect={(varPath) => setStateValue(prev => prev + `{{${varPath}}}`)}
+                              currentNodeId={node?.id || ""}
+                              onSelect={(varPath) =>
+                                setStateValue((prev) => prev + `{{${varPath}}}`)
+                              }
                             />
                           </div>
                           {renderValueInput()}
                           <p className="text-xs text-black-alpha-48 mt-4">
-                            {valueType === 'string' && 'Use {{variables}} to reference other data'}
-                            {valueType === 'number' && 'Can use {{lastOutput.price}} to reference numbers'}
-                            {valueType === 'boolean' && 'true or false'}
-                            {valueType === 'json' && 'Valid JSON object or array'}
-                            {valueType === 'expression' && 'JavaScript expression like: input.x + lastOutput.y'}
+                            {valueType === "string" &&
+                              "Use {{variables}} to reference other data"}
+                            {valueType === "number" &&
+                              "Can use {{lastOutput.price}} to reference numbers"}
+                            {valueType === "boolean" && "true or false"}
+                            {valueType === "json" &&
+                              "Valid JSON object or array"}
+                            {valueType === "expression" &&
+                              "JavaScript expression like: input.x + lastOutput.y"}
                           </p>
                         </div>
                       </div>
@@ -316,8 +342,9 @@ return result;`,
                     {/* Add Assignment Button */}
                     <button
                       onClick={() => {
-                        toast.info('Multiple state assignments coming soon!', {
-                          description: 'Currently you can set one variable per node. Add another Set State node for more variables.'
+                        toast.info("Multiple state assignments coming soon!", {
+                          description:
+                            "Currently you can set one variable per node. Add another Set State node for more variables.",
                         });
                       }}
                       className="px-12 py-8 bg-background-base hover:bg-black-alpha-4 border border-border-faint rounded-8 text-sm text-accent-black transition-colors flex items-center gap-6"

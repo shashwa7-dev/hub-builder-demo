@@ -11,7 +11,7 @@ import Scrollbar from "@/components/ui/scrollbar";
 import { BigIntProvider } from "@/components/providers/BigIntProvider";
 import "styles/main.css";
 
-const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+// const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
 
 const robotoMono = Roboto_Mono({
   subsets: ["latin"],
@@ -28,8 +28,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
-      <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+    // <ClerkProvider>
+    //   <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
         <html lang="en">
           <head>
             <title>Open Agent Builder</title>
@@ -47,8 +47,8 @@ export default function RootLayout({
             </BigIntProvider>
           </body>
         </html>
-      </ConvexProviderWithClerk>
-    </ClerkProvider>
+    //   </ConvexProviderWithClerk>
+    // </ClerkProvider>
   );
 }
 

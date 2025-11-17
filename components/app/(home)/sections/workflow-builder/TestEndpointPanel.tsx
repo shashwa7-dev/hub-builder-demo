@@ -2,29 +2,37 @@
 
 import { motion } from "framer-motion";
 import { useState, useEffect, useMemo } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/shadcn/tabs";
 import { Workflow } from "@/lib/workflow/types";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/shadcn/tabs";
 
 interface TestEndpointPanelProps {
   workflowId: string;
   workflow: Workflow | null;
-  environment: 'draft' | 'production';
+  environment: "draft" | "production";
   onClose: () => void;
 }
 
-export default function TestEndpointPanel({ workflowId, workflow, environment, onClose }: TestEndpointPanelProps) {
+export default function TestEndpointPanel({
+  workflowId,
+  workflow,
+  environment,
+  onClose,
+}: TestEndpointPanelProps) {
   // Get user's API keys
-  const apiKeys = useQuery(api.apiKeys.list, {});
+  const apiKeys: any = [];
   const firstKey = apiKeys?.[0];
 
   // Try to get the full API key from localStorage (only available if just generated)
   const [fullApiKey, setFullApiKey] = useState<string | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedKey = sessionStorage.getItem('latest_api_key');
+    if (typeof window !== "undefined") {
+      const storedKey = sessionStorage.getItem("latest_api_key");
       if (storedKey) {
         setFullApiKey(storedKey);
       }
@@ -32,7 +40,9 @@ export default function TestEndpointPanel({ workflowId, workflow, environment, o
   }, [apiKeys]);
 
   // Get input variables from the workflow's start node
-  const startNode = workflow?.nodes.find(n => (n.data as any)?.nodeType === 'start');
+  const startNode = workflow?.nodes.find(
+    (n) => (n.data as any)?.nodeType === "start"
+  );
   const inputVariables = (startNode?.data as any)?.inputVariables || [];
 
   // Generate default payload from input variables
@@ -41,7 +51,7 @@ export default function TestEndpointPanel({ workflowId, workflow, environment, o
       return { input: "https://firecrawl.dev" };
     }
     return inputVariables.reduce((acc: any, v: any) => {
-      acc[v.name] = v.defaultValue || '';
+      acc[v.name] = v.defaultValue || "";
       return acc;
     }, {});
   }, [inputVariables, workflow?.id]);
@@ -57,13 +67,15 @@ export default function TestEndpointPanel({ workflowId, workflow, environment, o
     setInput(JSON.stringify(defaultPayload, null, 2));
   }, [defaultPayload, workflowId]);
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
   const endpointUrl = `${baseUrl}/api/workflows/${workflowId}/execute`;
   const streamUrl = `${baseUrl}/api/workflows/${workflowId}/execute-stream`;
 
   const parsedInput = useMemo(() => {
     try {
-      return input && input.trim().length > 0 ? JSON.parse(input) : defaultPayload;
+      return input && input.trim().length > 0
+        ? JSON.parse(input)
+        : defaultPayload;
     } catch {
       return defaultPayload;
     }
@@ -71,12 +83,12 @@ export default function TestEndpointPanel({ workflowId, workflow, environment, o
 
   const requestBodyMinified = useMemo(
     () => JSON.stringify({ input: parsedInput }),
-    [parsedInput],
+    [parsedInput]
   );
 
   const requestBodyPretty = useMemo(
     () => JSON.stringify({ input: parsedInput }, null, 2),
-    [parsedInput],
+    [parsedInput]
   );
 
   const handleCopy = async (key: string, value: string) => {
@@ -92,7 +104,7 @@ export default function TestEndpointPanel({ workflowId, workflow, environment, o
   };
 
   // Use full API key if available (from recent generation), otherwise show placeholder
-  const apiKeyToUse = fullApiKey || 'YOUR_API_KEY_HERE';
+  const apiKeyToUse = fullApiKey || "YOUR_API_KEY_HERE";
   const hasRealKey = !!fullApiKey;
 
   const apiKeyHeader = `  -H "Authorization: Bearer ${apiKeyToUse}" \\`;
@@ -166,7 +178,6 @@ with requests.post(
         if line:
             print(line.decode())`;
 
-
   const handleTest = async () => {
     setLoading(true);
     setError(null);
@@ -178,7 +189,7 @@ with requests.post(
       try {
         parsedInput = JSON.parse(input);
       } catch (e) {
-        setError('Invalid JSON in request body');
+        setError("Invalid JSON in request body");
         setLoading(false);
         return;
       }
@@ -189,9 +200,9 @@ with requests.post(
       };
 
       const res = await fetch(endpointUrl, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(requestBody),
       });
@@ -199,7 +210,7 @@ with requests.post(
       const data = await res.json();
       setResponse(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Request failed');
+      setError(err instanceof Error ? err.message : "Request failed");
     } finally {
       setLoading(false);
     }
@@ -216,13 +227,25 @@ with requests.post(
       {/* Header */}
       <div className="p-20 border-b border-border-faint flex-shrink-0">
         <div className="flex items-center justify-between">
-          <h2 className="text-label-large text-accent-black font-medium">Endpoint</h2>
+          <h2 className="text-label-large text-accent-black font-medium">
+            Endpoint
+          </h2>
           <button
             onClick={onClose}
             className="w-32 h-32 rounded-6 hover:bg-black-alpha-4 transition-colors flex items-center justify-center"
           >
-            <svg className="w-16 h-16 text-black-alpha-48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-16 h-16 text-black-alpha-48"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -259,16 +282,20 @@ with requests.post(
         {/* Expected Output Schema */}
         {(() => {
           // Find the last node before the end node that has output
-          const endNode = workflow?.nodes.find(n => (n.data as any)?.nodeType === 'end');
+          const endNode = workflow?.nodes.find(
+            (n) => (n.data as any)?.nodeType === "end"
+          );
           if (!endNode) return null;
 
           // Find edges that connect to the end node
-          const edgesToEnd = workflow?.edges.filter(e => e.target === endNode.id);
+          const edgesToEnd = workflow?.edges.filter(
+            (e) => e.target === endNode.id
+          );
           if (!edgesToEnd || edgesToEnd.length === 0) return null;
 
           // Get the last node before end
           const lastNodeId = edgesToEnd[0]?.source;
-          const lastNode = workflow?.nodes.find(n => n.id === lastNodeId);
+          const lastNode = workflow?.nodes.find((n) => n.id === lastNodeId);
           if (!lastNode) return null;
 
           const nodeData = lastNode.data as any;
@@ -285,7 +312,9 @@ with requests.post(
                     This workflow returns structured JSON matching this schema:
                   </p>
                   <pre className="text-body-small text-accent-black font-mono whitespace-pre-wrap overflow-auto max-h-200">
-                    {typeof outputSchema === 'string' ? outputSchema : JSON.stringify(outputSchema, null, 2)}
+                    {typeof outputSchema === "string"
+                      ? outputSchema
+                      : JSON.stringify(outputSchema, null, 2)}
                   </pre>
                 </div>
               </div>
@@ -301,7 +330,11 @@ with requests.post(
           {!hasRealKey && (
             <div className="mb-12 p-12 bg-heat-4 border border-heat-100 rounded-8">
               <p className="text-body-small text-accent-black">
-                <strong>Note:</strong> Replace <code className="px-4 py-2 bg-white rounded text-xs font-mono">YOUR_API_KEY_HERE</code> with your actual API key from Settings.
+                <strong>Note:</strong> Replace{" "}
+                <code className="px-4 py-2 bg-white rounded text-xs font-mono">
+                  YOUR_API_KEY_HERE
+                </code>{" "}
+                with your actual API key from Settings.
               </p>
             </div>
           )}
@@ -309,7 +342,8 @@ with requests.post(
           {hasRealKey && (
             <div className="mb-12 p-12 bg-heat-4 border border-heat-100 rounded-8">
               <p className="text-body-small text-accent-black">
-                <strong>Ready to use!</strong> Your API key is included in the examples below.
+                <strong>Ready to use!</strong> Your API key is included in the
+                examples below.
               </p>
             </div>
           )}
@@ -324,52 +358,52 @@ with requests.post(
             <TabsContent value="curl">
               <div className="relative">
                 <button
-                  onClick={() => handleCopy('curl', curlStandard)}
+                  onClick={() => handleCopy("curl", curlStandard)}
                   className="absolute top-12 right-12 flex items-center gap-6 px-12 py-6 bg-accent-white hover:bg-[#f4f4f5] border border-border-faint rounded-8 text-xs text-accent-black transition-colors shadow-sm"
                 >
-                  {copiedKey === 'curl' ? 'Copied' : 'Copy'}
+                  {copiedKey === "curl" ? "Copied" : "Copy"}
                 </button>
                 <pre className="px-12 py-10 bg-background-base text-accent-black rounded-8 text-body-small font-mono whitespace-pre-wrap break-words overflow-y-auto overflow-x-hidden max-h-200 border border-border-faint">
-{curlStandard}
+                  {curlStandard}
                 </pre>
               </div>
             </TabsContent>
             <TabsContent value="curl-stream">
               <div className="relative">
                 <button
-                  onClick={() => handleCopy('curl-stream', curlStreaming)}
+                  onClick={() => handleCopy("curl-stream", curlStreaming)}
                   className="absolute top-12 right-12 flex items-center gap-6 px-12 py-6 bg-accent-white hover:bg-[#f4f4f5] border border-border-faint rounded-8 text-xs text-accent-black transition-colors shadow-sm"
                 >
-                  {copiedKey === 'curl-stream' ? 'Copied' : 'Copy'}
+                  {copiedKey === "curl-stream" ? "Copied" : "Copy"}
                 </button>
                 <pre className="px-12 py-10 bg-background-base text-accent-black rounded-8 text-body-small font-mono whitespace-pre-wrap break-words overflow-y-auto overflow-x-hidden max-h-200 border border-border-faint">
-{curlStreaming}
+                  {curlStreaming}
                 </pre>
               </div>
             </TabsContent>
             <TabsContent value="ts">
               <div className="relative">
                 <button
-                  onClick={() => handleCopy('ts', tsExample)}
+                  onClick={() => handleCopy("ts", tsExample)}
                   className="absolute top-12 right-12 flex items-center gap-6 px-12 py-6 bg-accent-white hover:bg-[#f4f4f5] border border-border-faint rounded-8 text-xs text-accent-black transition-colors shadow-sm"
                 >
-                  {copiedKey === 'ts' ? 'Copied' : 'Copy'}
+                  {copiedKey === "ts" ? "Copied" : "Copy"}
                 </button>
                 <pre className="px-12 py-10 bg-background-base text-accent-black rounded-8 text-body-small font-mono whitespace-pre-wrap break-words overflow-y-auto overflow-x-hidden max-h-200 border border-border-faint">
-{tsExample}
+                  {tsExample}
                 </pre>
               </div>
             </TabsContent>
             <TabsContent value="python">
               <div className="relative">
                 <button
-                  onClick={() => handleCopy('python', pythonExample)}
+                  onClick={() => handleCopy("python", pythonExample)}
                   className="absolute top-12 right-12 flex items-center gap-6 px-12 py-6 bg-accent-white hover:bg-[#f4f4f5] border border-border-faint rounded-8 text-xs text-accent-black transition-colors shadow-sm"
                 >
-                  {copiedKey === 'python' ? 'Copied' : 'Copy'}
+                  {copiedKey === "python" ? "Copied" : "Copy"}
                 </button>
                 <pre className="px-12 py-10 bg-background-base text-accent-black rounded-8 text-body-small font-mono whitespace-pre-wrap break-words overflow-y-auto overflow-x-hidden max-h-200 border border-border-faint">
-{pythonExample}
+                  {pythonExample}
                 </pre>
               </div>
             </TabsContent>

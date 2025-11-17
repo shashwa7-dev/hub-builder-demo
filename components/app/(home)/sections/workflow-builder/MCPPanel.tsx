@@ -2,18 +2,22 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { Globe, Brain, Database, Package, Loader2, ChevronDown } from "lucide-react";
+import {
+  Globe,
+  Brain,
+  Database,
+  Package,
+  Loader2,
+  ChevronDown,
+} from "lucide-react";
 import type { Node } from "@xyflow/react";
 import { toast } from "sonner";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useUser } from "@clerk/nextjs";
 
 interface MCPPanelProps {
   node: Node | null;
   onClose: () => void;
   onUpdate: (nodeId: string, data: any) => void;
-  mode?: 'configure' | 'add-to-agent';
+  mode?: "configure" | "add-to-agent";
   onAddToAgent?: (mcpConfig: any) => void;
   onOpenSettings?: () => void;
 }
@@ -22,29 +26,27 @@ export default function MCPPanel({
   node,
   onClose,
   onUpdate,
-  mode = 'configure',
+  mode = "configure",
   onAddToAgent,
-  onOpenSettings
+  onOpenSettings,
 }: MCPPanelProps) {
-  const { user } = useUser();
   const nodeData = node?.data as any;
 
   // Fetch enabled MCP servers from central registry
-  const mcpServers = useQuery(api.mcpServers.getEnabledMCPs,
-    user?.id ? { userId: user.id } : "skip"
+  const mcpServers: any = dummyMCPs;
+  // Store only the selected server ID
+  const [selectedServerId, setSelectedServerId] = useState<string | null>(
+    () => {
+      return nodeData?.mcpServerId || null;
+    }
   );
 
-  // Store only the selected server ID
-  const [selectedServerId, setSelectedServerId] = useState<string | null>(() => {
-    return nodeData?.mcpServerId || null;
-  });
-
   const [showDetails, setShowDetails] = useState(false);
-  const selectedServer = mcpServers?.find(s => s._id === selectedServerId);
+  const selectedServer = mcpServers?.find((s) => s._id === selectedServerId);
 
   // Auto-save selected server ID (only in configure mode)
   useEffect(() => {
-    if (!node || mode === 'add-to-agent') return;
+    if (!node || mode === "add-to-agent") return;
 
     const timeoutId = setTimeout(() => {
       try {
@@ -52,9 +54,10 @@ export default function MCPPanel({
           mcpServerId: selectedServerId,
         });
       } catch (error) {
-        console.error('Error saving MCP server selection:', error);
-        toast.error('Failed to save MCP server selection', {
-          description: error instanceof Error ? error.message : 'Unable to save changes',
+        console.error("Error saving MCP server selection:", error);
+        toast.error("Failed to save MCP server selection", {
+          description:
+            error instanceof Error ? error.message : "Unable to save changes",
         });
       }
     }, 500);
@@ -64,16 +67,20 @@ export default function MCPPanel({
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'web': return <Globe className="w-16 h-16" />;
-      case 'ai': return <Brain className="w-16 h-16" />;
-      case 'data': return <Database className="w-16 h-16" />;
-      default: return <Package className="w-16 h-16" />;
+      case "web":
+        return <Globe className="w-16 h-16" />;
+      case "ai":
+        return <Brain className="w-16 h-16" />;
+      case "data":
+        return <Database className="w-16 h-16" />;
+      default:
+        return <Package className="w-16 h-16" />;
     }
   };
 
   return (
     <AnimatePresence>
-      {(node || mode === 'add-to-agent') && (
+      {(node || mode === "add-to-agent") && (
         <motion.aside
           initial={{ x: 400, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
@@ -85,14 +92,24 @@ export default function MCPPanel({
           <div className="p-20 border-b border-border-faint">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-xl font-semibold text-accent-black">
-                {mode === 'add-to-agent' ? 'Add MCP to Agent' : 'MCP Node'}
+                {mode === "add-to-agent" ? "Add MCP to Agent" : "MCP Node"}
               </h2>
               <button
                 onClick={onClose}
                 className="w-32 h-32 rounded-6 hover:bg-black-alpha-4 transition-colors flex items-center justify-center"
               >
-                <svg className="w-16 h-16 text-black-alpha-48" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-16 h-16 text-black-alpha-48"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -133,11 +150,13 @@ export default function MCPPanel({
                       setSelectedServerId(serverId);
 
                       // In add-to-agent mode, call the callback
-                      if (mode === 'add-to-agent' && onAddToAgent && serverId) {
-                        const server = mcpServers.find(s => s._id === serverId);
+                      if (mode === "add-to-agent" && onAddToAgent && serverId) {
+                        const server = mcpServers.find(
+                          (s) => s.id === serverId
+                        );
                         if (server) {
                           onAddToAgent({
-                            mcpServerId: server._id,
+                            mcpServerId: server.id,
                             name: server.name,
                             tools: server.tools || [],
                           });
@@ -150,10 +169,12 @@ export default function MCPPanel({
                   >
                     <option value="">Select an MCP server...</option>
                     {mcpServers.map((server) => {
-                      const isFirecrawl = server.name === 'Firecrawl' && server.isOfficial;
+                      const isFirecrawl =
+                        server.name === "Firecrawl" && server.isOfficial;
                       return (
                         <option key={server._id} value={server._id}>
-                          {server.name} {isFirecrawl && '(API Key Required)'} {server.tools && `(${server.tools.length} tools)`}
+                          {server.name} {isFirecrawl && "(API Key Required)"}{" "}
+                          {server.tools && `(${server.tools.length} tools)`}
                         </option>
                       );
                     })}
@@ -172,32 +193,35 @@ export default function MCPPanel({
                               <h4 className="text-sm font-medium text-accent-black">
                                 {selectedServer.name}
                               </h4>
-                              {selectedServer.name === 'Firecrawl' && selectedServer.isOfficial && (
-                                <span className="px-6 py-2 bg-heat-4 text-heat-100 rounded-6 text-xs border border-heat-100 font-medium">
-                                  API Key Required
-                                </span>
-                              )}
+                              {selectedServer.name === "Firecrawl" &&
+                                selectedServer.isOfficial && (
+                                  <span className="px-6 py-2 bg-heat-4 text-heat-100 rounded-6 text-xs border border-heat-100 font-medium">
+                                    API Key Required
+                                  </span>
+                                )}
                             </div>
                             {selectedServer.description && (
                               <p className="text-xs text-black-alpha-48 mb-8">
                                 {selectedServer.description}
                               </p>
                             )}
-                            {selectedServer.name === 'Firecrawl' && selectedServer.isOfficial && (
-                              <a
-                                href="https://www.firecrawl.dev/app/api-keys"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-xs text-heat-100 hover:text-heat-200 underline block mb-8"
-                              >
-                                Get API key here →
-                              </a>
-                            )}
+                            {selectedServer.name === "Firecrawl" &&
+                              selectedServer.isOfficial && (
+                                <a
+                                  href="https://www.firecrawl.dev/app/api-keys"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-xs text-heat-100 hover:text-heat-200 underline block mb-8"
+                                >
+                                  Get API key here →
+                                </a>
+                              )}
                             <div className="flex items-center gap-12 text-xs">
                               <span className="text-black-alpha-48">
                                 Category: {selectedServer.category}
                               </span>
-                              {selectedServer.connectionStatus === 'connected' && (
+                              {selectedServer.connectionStatus ===
+                                "connected" && (
                                 <span className="px-6 py-2 bg-heat-4 text-heat-100 rounded-6 border border-heat-100">
                                   Connected
                                 </span>
@@ -207,39 +231,50 @@ export default function MCPPanel({
                         </div>
 
                         {/* Show/Hide Tools Button */}
-                        {selectedServer.tools && selectedServer.tools.length > 0 && (
-                          <div className="mt-12">
-                            <button
-                              onClick={() => setShowDetails(!showDetails)}
-                              className="flex items-center gap-8 text-xs text-heat-100 hover:text-heat-200 font-medium"
-                            >
-                              <ChevronDown className={`w-14 h-14 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
-                              {showDetails ? 'Hide' : 'Show'} Available Tools ({selectedServer.tools.length})
-                            </button>
+                        {selectedServer.tools &&
+                          selectedServer.tools.length > 0 && (
+                            <div className="mt-12">
+                              <button
+                                onClick={() => setShowDetails(!showDetails)}
+                                className="flex items-center gap-8 text-xs text-heat-100 hover:text-heat-200 font-medium"
+                              >
+                                <ChevronDown
+                                  className={`w-14 h-14 transition-transform ${
+                                    showDetails ? "rotate-180" : ""
+                                  }`}
+                                />
+                                {showDetails ? "Hide" : "Show"} Available Tools
+                                ({selectedServer.tools.length})
+                              </button>
 
-                            {/* Tools List */}
-                            <AnimatePresence>
-                              {showDetails && (
-                                <motion.div
-                                  initial={{ height: 0, opacity: 0 }}
-                                  animate={{ height: 'auto', opacity: 1 }}
-                                  exit={{ height: 0, opacity: 0 }}
-                                  className="mt-8"
-                                >
-                                  <div className="space-y-6">
-                                    {selectedServer.tools.map((tool: string) => (
-                                      <div key={tool} className="p-8 bg-accent-white rounded-6 border border-border-faint">
-                                        <code className="text-xs font-mono text-heat-100">
-                                          {tool}
-                                        </code>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </motion.div>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        )}
+                              {/* Tools List */}
+                              <AnimatePresence>
+                                {showDetails && (
+                                  <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="mt-8"
+                                  >
+                                    <div className="space-y-6">
+                                      {selectedServer.tools.map(
+                                        (tool: string) => (
+                                          <div
+                                            key={tool}
+                                            className="p-8 bg-accent-white rounded-6 border border-border-faint"
+                                          >
+                                            <code className="text-xs font-mono text-heat-100">
+                                              {tool}
+                                            </code>
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+                                  </motion.div>
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          )}
                       </div>
                     </div>
                   )}
@@ -268,3 +303,28 @@ export default function MCPPanel({
     </AnimatePresence>
   );
 }
+
+export const dummyMCPs = [
+  {
+    id: "96c0cca7-8140-4cdd-85b5-e9e642373a71",
+    name: "getPolymarketMarkets",
+    description:
+      "Get data of all markets on Polymarket using Gamma API and filter using limit",
+    mcp: "Polymarket",
+    imageUrl: "/public/polymarket.png",
+    createdAt: "2025-11-10T17:46:50.789Z",
+    tools: ["browser_navigate", "browser_click", "browser_scrape"],
+    category: "web",
+  },
+  {
+    id: "a9ab5d27-5ebd-4a9a-8fc8-60ed9f493d42",
+    name: "getPolymarketMarketsByCategory",
+    description:
+      "Search and get active Polymarket markets by category (e.g., 'tennis', 'bitcoin', 'tech', 'politics', 'sports'). Use this when user wants to explore markets in a specific topic or category.",
+    mcp: "Polymarket",
+    imageUrl: "/public/polymarket.png",
+    createdAt: "2025-11-10T17:46:51.009Z",
+    tools: ["browser_navigate", "browser_click", "browser_scrape"],
+    category: "web",
+  },
+];

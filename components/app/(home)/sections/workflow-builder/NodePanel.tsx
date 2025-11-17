@@ -5,11 +5,6 @@ import { useState, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
 import VariableReferencePicker from "./VariableReferencePicker";
 import { toast } from "sonner";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useUser } from "@clerk/nextjs";
-import { Id } from "@/convex/_generated/dataModel";
-import FirecrawlLogo from "@/components/icons/FirecrawlLogo";
 
 interface NodePanelProps {
   nodeData: {
@@ -34,8 +29,6 @@ export default function NodePanel({
   onUpdate,
   onOpenSettings,
 }: NodePanelProps) {
-  const { user } = useUser();
-
   // MCP states - now store only server IDs, not full configs
   const [showMCPSelector, setShowMCPSelector] = useState(false);
   const [expandedMcpId, setExpandedMcpId] = useState<string | null>(null);
@@ -43,47 +36,48 @@ export default function NodePanel({
   const [showModelsDropdown, setShowModelsDropdown] = useState(false);
 
   // Fetch enabled MCP servers from central registry
-  const mcpServers = useQuery(api.mcpServers.getEnabledMCPs,
-    user?.id ? { userId: user.id } : "skip"
-  );
-
+  const mcpServers: any = [];
   // Fetch user's LLM API keys to determine available models
-  const userLLMKeys = useQuery(api.userLLMKeys.getUserLLMKeys,
-    user?.id ? { userId: user.id } : "skip"
-  );
-
+  const userLLMKeys: any = [];
   // Get available models based on active API keys
   const getAvailableModels = () => {
     if (!userLLMKeys) return [];
 
-    const models: { provider: string; models: Array<{ id: string; name: string }> }[] = [];
+    const models: {
+      provider: string;
+      models: Array<{ id: string; name: string }>;
+    }[] = [];
 
     // Check for active keys and add corresponding models
-    const activeKeys = userLLMKeys.filter(key => key.isActive);
+    const activeKeys = userLLMKeys.filter((key) => key.isActive);
 
-    activeKeys.forEach(key => {
-      if (key.provider === 'anthropic') {
+    activeKeys.forEach((key) => {
+      if (key.provider === "anthropic") {
         models.push({
-          provider: 'Anthropic',
+          provider: "Anthropic",
           models: [
-            { id: 'anthropic/claude-sonnet-4-5-20250929', name: 'Claude Sonnet 4.5' },
-            { id: 'anthropic/claude-haiku-4-5-20251001', name: 'Claude Haiku 4.5' },
-          ]
+            {
+              id: "anthropic/claude-sonnet-4-5-20250929",
+              name: "Claude Sonnet 4.5",
+            },
+            {
+              id: "anthropic/claude-haiku-4-5-20251001",
+              name: "Claude Haiku 4.5",
+            },
+          ],
         });
-      } else if (key.provider === 'openai') {
+      } else if (key.provider === "openai") {
         models.push({
-          provider: 'OpenAI',
+          provider: "OpenAI",
           models: [
-            { id: 'openai/gpt-4o', name: 'GPT-5' },
-            { id: 'openai/gpt-4o-mini', name: 'GPT-5 Mini' },
-          ]
+            { id: "openai/gpt-4o", name: "GPT-5" },
+            { id: "openai/gpt-4o-mini", name: "GPT-5 Mini" },
+          ],
         });
-      } else if (key.provider === 'groq') {
+      } else if (key.provider === "groq") {
         models.push({
-          provider: 'Groq',
-          models: [
-            { id: 'groq/openai/gpt-oss-120b', name: 'GPT OSS 120B' },
-          ]
+          provider: "Groq",
+          models: [{ id: "groq/openai/gpt-oss-120b", name: "GPT OSS 120B" }],
         });
       }
     });
@@ -93,7 +87,7 @@ export default function NodePanel({
 
   // Helper to update JSON schema from fields array
   const updateSchemaFromFields = (
-    fields: Array<{ name: string; type: string; required: boolean }>,
+    fields: Array<{ name: string; type: string; required: boolean }>
   ) => {
     const properties: any = {};
     const required: string[] = [];
@@ -127,39 +121,52 @@ export default function NodePanel({
         const data = actualNode.data as any;
 
         // If we already have server IDs, use them
-        if (data.mcpServerIds && Array.isArray(data.mcpServerIds) && data.mcpServerIds.length > 0) {
+        if (
+          data.mcpServerIds &&
+          Array.isArray(data.mcpServerIds) &&
+          data.mcpServerIds.length > 0
+        ) {
           setCurrentMCPServerIds(data.mcpServerIds);
         }
         // If we have mcpTools but no server IDs, try to match them
-        else if (data.mcpTools && Array.isArray(data.mcpTools) && mcpServers && mcpServers.length > 0) {
-          console.log('🔄 Re-matching mcpTools after servers loaded');
+        else if (
+          data.mcpTools &&
+          Array.isArray(data.mcpTools) &&
+          mcpServers &&
+          mcpServers.length > 0
+        ) {
+          console.log("🔄 Re-matching mcpTools after servers loaded");
           const mcpIds = data.mcpTools
             .map((tool: any) => {
               const normalizeUrl = (url: string) =>
-                url?.replace(/\{[^}]+\}/g, '').replace(/\/+$/, '').toLowerCase();
+                url
+                  ?.replace(/\{[^}]+\}/g, "")
+                  .replace(/\/+$/, "")
+                  .toLowerCase();
 
-              const matchingServer = mcpServers.find(
-                (server: any) => {
-                  const toolUrlNormalized = normalizeUrl(tool.url || '');
-                  const serverUrlNormalized = normalizeUrl(server.url || '');
+              const matchingServer = mcpServers.find((server: any) => {
+                const toolUrlNormalized = normalizeUrl(tool.url || "");
+                const serverUrlNormalized = normalizeUrl(server.url || "");
 
-                  const urlMatch = toolUrlNormalized === serverUrlNormalized ||
-                    (toolUrlNormalized && serverUrlNormalized &&
-                     (toolUrlNormalized.includes(serverUrlNormalized) ||
+                const urlMatch =
+                  toolUrlNormalized === serverUrlNormalized ||
+                  (toolUrlNormalized &&
+                    serverUrlNormalized &&
+                    (toolUrlNormalized.includes(serverUrlNormalized) ||
                       serverUrlNormalized.includes(toolUrlNormalized)));
 
-                  const nameMatch = server.name?.toLowerCase() === tool.name?.toLowerCase() ||
-                    server.label?.toLowerCase() === tool.label?.toLowerCase();
+                const nameMatch =
+                  server.name?.toLowerCase() === tool.name?.toLowerCase() ||
+                  server.label?.toLowerCase() === tool.label?.toLowerCase();
 
-                  return urlMatch || nameMatch;
-                }
-              );
+                return urlMatch || nameMatch;
+              });
               return matchingServer?._id;
             })
             .filter(Boolean);
 
           if (mcpIds.length > 0) {
-            console.log('✅ Matched server IDs:', mcpIds);
+            console.log("✅ Matched server IDs:", mcpIds);
             setCurrentMCPServerIds(mcpIds);
           }
         }
@@ -169,7 +176,9 @@ export default function NodePanel({
 
   // Initialize from nodeData if available
   const [name, setName] = useState(nodeData?.label || "My agent");
-  const [instructions, setInstructions] = useState((nodeData as any)?.instructions || "");
+  const [instructions, setInstructions] = useState(
+    (nodeData as any)?.instructions || ""
+  );
   const [includeChatHistory, setIncludeChatHistory] = useState(true);
   const [model, setModel] = useState("anthropic/claude-sonnet-4-5-20250929");
   const [outputFormat, setOutputFormat] = useState("Text");
@@ -217,44 +226,58 @@ export default function NodePanel({
       } else if (data.mcpTools && Array.isArray(data.mcpTools)) {
         // Convert mcpTools to server IDs by matching against available MCP servers
         if (mcpServers && mcpServers.length > 0) {
-          console.log('🔍 Matching mcpTools from template:', data.mcpTools);
-          console.log('🔍 Available MCP servers:', mcpServers.map((s: any) => ({ name: s.name, url: s.url })));
+          console.log("🔍 Matching mcpTools from template:", data.mcpTools);
+          console.log(
+            "🔍 Available MCP servers:",
+            mcpServers.map((s: any) => ({ name: s.name, url: s.url }))
+          );
 
           const mcpIds = data.mcpTools
             .map((tool: any) => {
               // Try to find matching MCP server by URL or name
-              const matchingServer = mcpServers.find(
-                (server: any) => {
-                  // Normalize URLs by removing placeholders for comparison
-                  const normalizeUrl = (url: string) =>
-                    url?.replace(/\{[^}]+\}/g, '').replace(/\/+$/, '').toLowerCase();
+              const matchingServer = mcpServers.find((server: any) => {
+                // Normalize URLs by removing placeholders for comparison
+                const normalizeUrl = (url: string) =>
+                  url
+                    ?.replace(/\{[^}]+\}/g, "")
+                    .replace(/\/+$/, "")
+                    .toLowerCase();
 
-                  const toolUrlNormalized = normalizeUrl(tool.url || '');
-                  const serverUrlNormalized = normalizeUrl(server.url || '');
+                const toolUrlNormalized = normalizeUrl(tool.url || "");
+                const serverUrlNormalized = normalizeUrl(server.url || "");
 
-                  // Match by URL (exact match after normalization)
-                  const urlMatch = toolUrlNormalized === serverUrlNormalized ||
-                    (toolUrlNormalized && serverUrlNormalized &&
-                     toolUrlNormalized.includes(serverUrlNormalized.split('/')[0]) ||
-                     serverUrlNormalized.includes(toolUrlNormalized.split('/')[0]));
+                // Match by URL (exact match after normalization)
+                const urlMatch =
+                  toolUrlNormalized === serverUrlNormalized ||
+                  (toolUrlNormalized &&
+                    serverUrlNormalized &&
+                    toolUrlNormalized.includes(
+                      serverUrlNormalized.split("/")[0]
+                    )) ||
+                  serverUrlNormalized.includes(toolUrlNormalized.split("/")[0]);
 
-                  // Match by name (case-insensitive)
-                  const nameMatch = server.name?.toLowerCase() === tool.name?.toLowerCase() ||
-                    server.label?.toLowerCase() === tool.label?.toLowerCase() ||
-                    server.name?.toLowerCase() === tool.label?.toLowerCase();
+                // Match by name (case-insensitive)
+                const nameMatch =
+                  server.name?.toLowerCase() === tool.name?.toLowerCase() ||
+                  server.label?.toLowerCase() === tool.label?.toLowerCase() ||
+                  server.name?.toLowerCase() === tool.label?.toLowerCase();
 
-                  if (urlMatch || nameMatch) {
-                    console.log('✅ Matched tool', tool.name, 'to server', server.name);
-                  }
-
-                  return urlMatch || nameMatch;
+                if (urlMatch || nameMatch) {
+                  console.log(
+                    "✅ Matched tool",
+                    tool.name,
+                    "to server",
+                    server.name
+                  );
                 }
-              );
+
+                return urlMatch || nameMatch;
+              });
               return matchingServer?._id;
             })
             .filter(Boolean);
 
-          console.log('🎯 Matched MCP server IDs:', mcpIds);
+          console.log("🎯 Matched MCP server IDs:", mcpIds);
 
           if (mcpIds.length > 0) {
             setCurrentMCPServerIds(mcpIds);
@@ -271,7 +294,7 @@ export default function NodePanel({
                 name: propName,
                 type: prop.type || "string",
                 required: parsed.required?.includes(propName) || false,
-              }),
+              })
             );
             setSchemaFields(fields);
           }
@@ -333,7 +356,8 @@ export default function NodePanel({
             outputFormat === "JSON" ? jsonOutputSchema : undefined,
           showSearchSources,
           mcpTools: mcpTools.length > 0 ? mcpTools : undefined,
-          mcpServerIds: currentMCPServerIds.length > 0 ? currentMCPServerIds : undefined,
+          mcpServerIds:
+            currentMCPServerIds.length > 0 ? currentMCPServerIds : undefined,
         });
       } catch (error) {
         console.error("Error updating node:", error);
@@ -435,7 +459,6 @@ export default function NodePanel({
 
           {/* Form Fields */}
           <div className="p-20 space-y-20">
-
             {/* Instructions Field */}
             <div>
               <div className="flex items-center justify-between mb-8">
@@ -462,7 +485,9 @@ export default function NodePanel({
                 className="w-full px-14 py-10 bg-background-base border border-border-faint rounded-10 text-sm text-accent-black placeholder-black-alpha-32 focus:outline-none focus:border-heat-100 transition-colors resize-y"
               />
               <p className="text-xs text-black-alpha-48 mt-6">
-                Use <code className="px-4 py-1 bg-background-base rounded text-heat-100 font-mono text-xs">{`{{variable}}`}</code> syntax to reference data
+                Use{" "}
+                <code className="px-4 py-1 bg-background-base rounded text-heat-100 font-mono text-xs">{`{{variable}}`}</code>{" "}
+                syntax to reference data
               </p>
             </div>
 
@@ -497,15 +522,18 @@ export default function NodePanel({
                 <span className="truncate">
                   {model ? (
                     // Find the display name for the selected model
-                    getAvailableModels().flatMap(p => p.models).find(m => m.id === model)?.name ||
-                    model
+                    getAvailableModels()
+                      .flatMap((p) => p.models)
+                      .find((m) => m.id === model)?.name || model
                   ) : (
-                    <span className="text-black-alpha-32">Select a model...</span>
+                    <span className="text-black-alpha-32">
+                      Select a model...
+                    </span>
                   )}
                 </span>
                 <ChevronDown
                   className={`w-16 h-16 text-black-alpha-48 transition-transform ${
-                    showModelsDropdown ? 'rotate-180' : ''
+                    showModelsDropdown ? "rotate-180" : ""
                   }`}
                 />
               </button>
@@ -543,8 +571,8 @@ export default function NodePanel({
                               }}
                               className={`w-full text-left px-8 py-6 rounded-6 text-sm transition-colors ${
                                 model === modelOption.id
-                                  ? 'bg-heat-100 text-white'
-                                  : 'hover:bg-black-alpha-4 text-accent-black'
+                                  ? "bg-heat-100 text-white"
+                                  : "hover:bg-black-alpha-4 text-accent-black"
                               }`}
                             >
                               {modelOption.name}
@@ -560,8 +588,8 @@ export default function NodePanel({
                           }}
                           className={`w-full text-left px-8 py-6 rounded-6 text-sm transition-colors ${
                             model === "custom"
-                              ? 'bg-heat-100 text-white'
-                              : 'hover:bg-black-alpha-4 text-accent-black'
+                              ? "bg-heat-100 text-white"
+                              : "hover:bg-black-alpha-4 text-accent-black"
                           }`}
                         >
                           Custom Model...
@@ -703,24 +731,34 @@ export default function NodePanel({
                       </div>
                     ) : (
                       mcpServers.map((server: any) => {
-                        const isConnected = currentMCPServerIds.includes(server._id);
+                        const isConnected = currentMCPServerIds.includes(
+                          server._id
+                        );
                         const isExpanded = expandedMcpId === server._id;
-                        const isFirecrawl = server.name === 'Firecrawl' && server.isOfficial;
+                        const isFirecrawl =
+                          server.name === "Firecrawl" && server.isOfficial;
 
                         return (
-                          <div key={server._id} className="rounded-12 border border-border-faint overflow-hidden bg-accent-white">
+                          <div
+                            key={server._id}
+                            className="rounded-12 border border-border-faint overflow-hidden bg-accent-white"
+                          >
                             <button
-                              onClick={() => setExpandedMcpId(isExpanded ? null : server._id)}
+                              onClick={() =>
+                                setExpandedMcpId(isExpanded ? null : server._id)
+                              }
                               className="w-full px-16 py-12 flex items-center justify-between text-left hover:bg-black-alpha-4 transition-colors"
                             >
                               <div className="flex items-center gap-8">
-                                <span className="text-sm font-medium text-accent-black">{server.name}</span>
+                                <span className="text-sm font-medium text-accent-black">
+                                  {server.name}
+                                </span>
                                 {isFirecrawl && (
                                   <span className="px-6 py-2 bg-heat-4 text-heat-100 rounded-6 text-xs border border-heat-100 font-medium">
                                     API Key Required
                                   </span>
                                 )}
-                                {server.connectionStatus === 'connected' && (
+                                {server.connectionStatus === "connected" && (
                                   <span className="px-6 py-2 bg-heat-4 text-heat-100 rounded-6 text-xs border border-heat-100">
                                     Connected
                                   </span>
@@ -732,18 +770,27 @@ export default function NodePanel({
                                 )}
                               </div>
                               <svg
-                                className={`w-16 h-16 text-black-alpha-32 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                className={`w-16 h-16 text-black-alpha-32 transition-transform ${
+                                  isExpanded ? "rotate-180" : ""
+                                }`}
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
                               >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 9l-7 7-7-7"
+                                />
                               </svg>
                             </button>
                             {isExpanded && (
                               <div className="px-16 pb-16 space-y-10 bg-accent-white border-t border-border-faint">
                                 {server.description && (
-                                  <p className="pt-12 text-xs text-black-alpha-64">{server.description}</p>
+                                  <p className="pt-12 text-xs text-black-alpha-64">
+                                    {server.description}
+                                  </p>
                                 )}
                                 {isFirecrawl && (
                                   <a
@@ -757,10 +804,15 @@ export default function NodePanel({
                                 )}
                                 {server.tools && server.tools.length > 0 && (
                                   <div className="space-y-6">
-                                    <p className="text-xs text-black-alpha-64 font-medium">Available Tools:</p>
+                                    <p className="text-xs text-black-alpha-64 font-medium">
+                                      Available Tools:
+                                    </p>
                                     <div className="flex flex-wrap gap-4">
                                       {server.tools.map((tool: string) => (
-                                        <span key={tool} className="px-6 py-2 bg-background-base text-black-alpha-64 rounded-4 text-xs border border-border-faint">
+                                        <span
+                                          key={tool}
+                                          className="px-6 py-2 bg-background-base text-black-alpha-64 rounded-4 text-xs border border-border-faint"
+                                        >
                                           {tool}
                                         </span>
                                       ))}
@@ -771,24 +823,36 @@ export default function NodePanel({
                                   <button
                                     onClick={() => {
                                       if (isConnected) {
-                                        const newServerIds = currentMCPServerIds.filter(id => id !== server._id);
-                                        onUpdate(nodeData?.id || '', { mcpServerIds: newServerIds });
+                                        const newServerIds =
+                                          currentMCPServerIds.filter(
+                                            (id) => id !== server._id
+                                          );
+                                        onUpdate(nodeData?.id || "", {
+                                          mcpServerIds: newServerIds,
+                                        });
                                         setCurrentMCPServerIds(newServerIds);
                                         toast.success(`Removed ${server.name}`);
                                       } else {
-                                        const newServerIds = [...currentMCPServerIds, server._id];
-                                        onUpdate(nodeData?.id || '', { mcpServerIds: newServerIds });
+                                        const newServerIds = [
+                                          ...currentMCPServerIds,
+                                          server._id,
+                                        ];
+                                        onUpdate(nodeData?.id || "", {
+                                          mcpServerIds: newServerIds,
+                                        });
                                         setCurrentMCPServerIds(newServerIds);
-                                        toast.success(`Added ${server.name} to this agent`);
+                                        toast.success(
+                                          `Added ${server.name} to this agent`
+                                        );
                                       }
                                     }}
                                     className={`px-12 py-8 rounded-8 text-xs font-medium transition-colors ${
                                       isConnected
-                                        ? 'bg-accent-white border border-border-faint text-accent-black hover:bg-black-alpha-4'
-                                        : 'bg-heat-100 text-white hover:bg-heat-200'
+                                        ? "bg-accent-white border border-border-faint text-accent-black hover:bg-black-alpha-4"
+                                        : "bg-heat-100 text-white hover:bg-heat-200"
                                     }`}
                                   >
-                                    {isConnected ? 'Remove' : 'Add'}
+                                    {isConnected ? "Remove" : "Add"}
                                   </button>
                                 </div>
                               </div>
@@ -799,28 +863,43 @@ export default function NodePanel({
                     )}
                     <div className="rounded-12 border border-border-faint overflow-hidden bg-accent-white">
                       <button
-                        onClick={() => setExpandedMcpId(expandedMcpId === 'custom' ? null : 'custom')}
+                        onClick={() =>
+                          setExpandedMcpId(
+                            expandedMcpId === "custom" ? null : "custom"
+                          )
+                        }
                         className="w-full px-16 py-12 flex items-center justify-between text-left hover:bg-black-alpha-4 transition-colors"
                       >
                         <div className="flex items-center gap-8">
-                          <span className="text-sm font-medium text-accent-black">Add New MCP Server</span>
+                          <span className="text-sm font-medium text-accent-black">
+                            Add New MCP Server
+                          </span>
                           <span className="px-6 py-2 bg-heat-4 text-heat-100 rounded-6 text-xs border border-heat-100">
                             Settings
                           </span>
                         </div>
                         <svg
-                          className={`w-16 h-16 text-black-alpha-32 transition-transform ${expandedMcpId === 'custom' ? 'rotate-180' : ''}`}
+                          className={`w-16 h-16 text-black-alpha-32 transition-transform ${
+                            expandedMcpId === "custom" ? "rotate-180" : ""
+                          }`}
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
                         >
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 9l-7 7-7-7"
+                          />
                         </svg>
                       </button>
-                      {expandedMcpId === 'custom' && (
+                      {expandedMcpId === "custom" && (
                         <div className="px-16 pb-16 space-y-10 bg-[#f4f4f5]">
                           <p className="text-xs text-black-alpha-48">
-                            Add new MCP servers to your registry in Settings. Once added, they'll appear here for all your agents to use.
+                            Add new MCP servers to your registry in Settings.
+                            Once added, they'll appear here for all your agents
+                            to use.
                           </p>
                           <button
                             onClick={() => {
@@ -840,10 +919,14 @@ export default function NodePanel({
               )}
 
               {/* Show connected MCP servers */}
-              {currentMCPServerIds && currentMCPServerIds.length > 0 && mcpServers ? (
+              {currentMCPServerIds &&
+              currentMCPServerIds.length > 0 &&
+              mcpServers ? (
                 <div className="space-y-8">
                   {currentMCPServerIds.map((serverId: string) => {
-                    const server = mcpServers.find((s: any) => s._id === serverId);
+                    const server = mcpServers.find(
+                      (s: any) => s._id === serverId
+                    );
                     if (!server) return null;
                     return (
                       <div
@@ -862,8 +945,12 @@ export default function NodePanel({
                         </div>
                         <button
                           onClick={() => {
-                            const newServerIds = currentMCPServerIds.filter(id => id !== serverId);
-                            onUpdate(nodeData?.id || "", { mcpServerIds: newServerIds });
+                            const newServerIds = currentMCPServerIds.filter(
+                              (id) => id !== serverId
+                            );
+                            onUpdate(nodeData?.id || "", {
+                              mcpServerIds: newServerIds,
+                            });
                             setCurrentMCPServerIds(newServerIds);
                           }}
                           className="w-20 h-20 rounded-6 hover:bg-black-alpha-4 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
@@ -888,7 +975,9 @@ export default function NodePanel({
                 </div>
               ) : (
                 <div className="p-16 bg-background-base rounded-10 border border-border-faint text-center">
-                  <p className="text-sm text-black-alpha-48">No MCP servers connected</p>
+                  <p className="text-sm text-black-alpha-48">
+                    No MCP servers connected
+                  </p>
                 </div>
               )}
             </div>
@@ -993,7 +1082,7 @@ export default function NodePanel({
                           <button
                             onClick={() => {
                               const updated = schemaFields.filter(
-                                (_, i) => i !== index,
+                                (_, i) => i !== index
                               );
                               setSchemaFields(updated);
                               updateSchemaFromFields(updated);
@@ -1060,7 +1149,9 @@ export default function NodePanel({
               >
                 <span>Advanced</span>
                 <svg
-                  className={`w-16 h-16 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
+                  className={`w-16 h-16 transition-transform ${
+                    showAdvanced ? "rotate-180" : ""
+                  }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"

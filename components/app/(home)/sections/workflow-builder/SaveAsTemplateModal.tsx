@@ -2,11 +2,18 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Save, Tag, FolderOpen, Clock, BarChart3, Globe, Lock, Info } from "lucide-react";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import {
+  X,
+  Save,
+  Tag,
+  FolderOpen,
+  Clock,
+  BarChart3,
+  Globe,
+  Lock,
+  Info,
+} from "lucide-react";
 import { toast } from "sonner";
-import { useUser } from "@clerk/nextjs";
 
 interface SaveAsTemplateModalProps {
   isOpen: boolean;
@@ -39,8 +46,7 @@ export default function SaveAsTemplateModal({
   workflowId,
   workflowName,
 }: SaveAsTemplateModalProps) {
-  const { user } = useUser();
-  const saveAsTemplate = useMutation(api.templates.saveAsTemplate);
+  const saveAsTemplate = () => {}; //update with mutation
 
   const [formData, setFormData] = useState({
     name: `${workflowName} Template`,
@@ -86,16 +92,16 @@ export default function SaveAsTemplateModal({
     setIsSaving(true);
 
     try {
-      await saveAsTemplate({
-        workflowId: workflowId as any,
-        name: formData.name,
-        description: formData.description || undefined,
-        category: formData.category,
-        tags: formData.tags.length > 0 ? formData.tags : undefined,
-        difficulty: formData.difficulty || undefined,
-        estimatedTime: formData.estimatedTime || undefined,
-        isPublic: formData.isPublic,
-      });
+      // await saveAsTemplate({
+      //   workflowId: workflowId as any,
+      //   name: formData.name,
+      //   description: formData.description || undefined,
+      //   category: formData.category,
+      //   tags: formData.tags.length > 0 ? formData.tags : undefined,
+      //   difficulty: formData.difficulty || undefined,
+      //   estimatedTime: formData.estimatedTime || undefined,
+      //   isPublic: formData.isPublic,
+      // });
 
       toast.success("Template saved successfully!", {
         description: formData.isPublic
@@ -107,7 +113,8 @@ export default function SaveAsTemplateModal({
     } catch (error) {
       console.error("Failed to save template:", error);
       toast.error("Failed to save template", {
-        description: error instanceof Error ? error.message : "Please try again",
+        description:
+          error instanceof Error ? error.message : "Please try again",
       });
     } finally {
       setIsSaving(false);
@@ -141,7 +148,9 @@ export default function SaveAsTemplateModal({
                   <Save className="w-20 h-20 text-white" />
                 </div>
                 <div>
-                  <h2 className="text-title-h4 text-accent-black">Save as Template</h2>
+                  <h2 className="text-title-h4 text-accent-black">
+                    Save as Template
+                  </h2>
                   <p className="text-body-small text-black-alpha-48 mt-2">
                     Save this workflow as a reusable template
                   </p>
@@ -166,7 +175,9 @@ export default function SaveAsTemplateModal({
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
                 placeholder="Enter template name"
                 className="w-full px-12 py-10 bg-background-base border border-border-faint rounded-8 text-body-medium text-accent-black placeholder:text-black-alpha-32 focus:outline-none focus:ring-2 focus:ring-heat-100"
               />
@@ -179,7 +190,9 @@ export default function SaveAsTemplateModal({
               </label>
               <textarea
                 value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, description: e.target.value })
+                }
                 placeholder="Describe what this template does and when to use it"
                 rows={3}
                 className="w-full px-12 py-10 bg-background-base border border-border-faint rounded-8 text-body-medium text-accent-black placeholder:text-black-alpha-32 focus:outline-none focus:ring-2 focus:ring-heat-100 resize-none"
@@ -194,7 +207,9 @@ export default function SaveAsTemplateModal({
               </label>
               <select
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, category: e.target.value })
+                }
                 className="w-full px-12 py-10 bg-background-base border border-border-faint rounded-8 text-body-medium text-accent-black focus:outline-none focus:ring-2 focus:ring-heat-100"
               >
                 {categories.map((cat) => (
@@ -261,7 +276,9 @@ export default function SaveAsTemplateModal({
                 </label>
                 <select
                   value={formData.difficulty}
-                  onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, difficulty: e.target.value })
+                  }
                   className="w-full px-12 py-10 bg-background-base border border-border-faint rounded-8 text-body-medium text-accent-black focus:outline-none focus:ring-2 focus:ring-heat-100"
                 >
                   {difficultyLevels.map((level) => (
@@ -280,7 +297,9 @@ export default function SaveAsTemplateModal({
                 <input
                   type="text"
                   value={formData.estimatedTime}
-                  onChange={(e) => setFormData({ ...formData, estimatedTime: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, estimatedTime: e.target.value })
+                  }
                   placeholder="e.g., 5-10 minutes"
                   className="w-full px-12 py-10 bg-background-base border border-border-faint rounded-8 text-body-medium text-accent-black placeholder:text-black-alpha-32 focus:outline-none focus:ring-2 focus:ring-heat-100"
                 />
@@ -294,7 +313,9 @@ export default function SaveAsTemplateModal({
                   type="checkbox"
                   id="isPublic"
                   checked={formData.isPublic}
-                  onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, isPublic: e.target.checked })
+                  }
                   className="mt-4 w-16 h-16 rounded-4 border-border-faint text-heat-100 focus:ring-heat-100"
                 />
                 <label htmlFor="isPublic" className="flex-1 cursor-pointer">
@@ -305,7 +326,9 @@ export default function SaveAsTemplateModal({
                       <Lock className="w-16 h-16 text-black-alpha-48" />
                     )}
                     <span className="text-body-medium font-medium text-accent-black">
-                      {formData.isPublic ? "Public Template" : "Private Template"}
+                      {formData.isPublic
+                        ? "Public Template"
+                        : "Private Template"}
                     </span>
                   </div>
                   <p className="text-body-small text-black-alpha-48">
@@ -323,8 +346,9 @@ export default function SaveAsTemplateModal({
                 <Info className="w-16 h-16 text-heat-100 flex-shrink-0 mt-2" />
                 <div>
                   <p className="text-body-small text-accent-black">
-                    Templates allow you to save and reuse workflow configurations. You can create
-                    new workflows from your templates at any time.
+                    Templates allow you to save and reuse workflow
+                    configurations. You can create new workflows from your
+                    templates at any time.
                   </p>
                 </div>
               </div>
