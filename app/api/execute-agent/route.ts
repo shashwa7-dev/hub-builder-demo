@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerAPIKeys } from '@/lib/api/config';
 import { executeAgentNode } from '@/lib/workflow/executors/agent';
 import { WorkflowNode, WorkflowState } from '@/lib/workflow/types';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {

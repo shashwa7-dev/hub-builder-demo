@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getConvexClient, getAuthenticatedConvexClient, api, isConvexConfigured } from '@/lib/convex/client';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 /**

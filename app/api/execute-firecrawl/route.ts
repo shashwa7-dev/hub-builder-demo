@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import FirecrawlApp from '@mendable/firecrawl-js';
 import { getServerAPIKeys } from '@/lib/api/config';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {

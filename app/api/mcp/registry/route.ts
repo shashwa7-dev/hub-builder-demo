@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { officialMCPServers, getEnabledMCPServers, getMCPServerById } from '@/lib/mcp/mcp-registry';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 /**

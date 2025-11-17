@@ -1,9 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerAPIKeys } from '@/lib/api/config';
-import { executeExtractNode } from '@/lib/workflow/executors/extract';
-import { WorkflowNode, WorkflowState } from '@/lib/workflow/types';
 
-export const dynamic = 'force-dynamic';
+
+import { NextRequest, NextResponse } from "next/server";
+import { getServerAPIKeys } from "@/lib/api/config";
+import { executeExtractNode } from "@/lib/workflow/executors/extract";
+import { WorkflowNode, WorkflowState } from "@/lib/workflow/types";
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +16,7 @@ export async function POST(request: NextRequest) {
     const apiKeys = getServerAPIKeys();
     if (!apiKeys) {
       return NextResponse.json(
-        { error: 'API keys not configured in .env.local' },
+        { error: "API keys not configured in .env.local" },
         { status: 500 }
       );
     }
@@ -22,22 +24,22 @@ export async function POST(request: NextRequest) {
     // Create a minimal workflow state
     const state: WorkflowState = {
       variables: {
-        input: context || '',
-        lastOutput: context || '',
+        input: context || "",
+        lastOutput: context || "",
       },
       chatHistory: [],
     };
 
     // Create a minimal workflow node
     const node: WorkflowNode = {
-      id: 'extract-api-call',
-      type: 'transform' as const,  // Extract uses the transform node type
+      id: "extract-api-call",
+      type: "transform" as const, // Extract uses the transform node type
       position: { x: 0, y: 0 },
       data: {
-        label: 'Extract',
-        nodeType: 'extract',  // Specify the actual node type in data
-        instructions: instructions || 'Extract information from the input',
-        model: model || 'gpt-5-mini',
+        label: "Extract",
+        nodeType: "extract", // Specify the actual node type in data
+        instructions: instructions || "Extract information from the input",
+        model: model || "gpt-5-mini",
         jsonSchema: jsonSchema,
         mcpTools: mcpTools,
       },
@@ -53,11 +55,11 @@ export async function POST(request: NextRequest) {
       mcpToolsUsed: result.mcpToolsUsed,
     });
   } catch (error) {
-    console.error('Extract execution error:', error);
+    console.error("Extract execution error:", error);
     return NextResponse.json(
       {
-        error: 'Extract execution failed',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Extract execution failed",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );

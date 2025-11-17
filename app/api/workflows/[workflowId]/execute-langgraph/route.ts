@@ -3,7 +3,7 @@ import { LangGraphExecutor } from "@/lib/workflow/langgraph";
 import { getWorkflow } from "@/lib/workflow/storage";
 import { getServerAPIKeys } from "@/lib/api/config";
 import { validateApiKey } from "@/lib/api/auth";
-
+export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 /**

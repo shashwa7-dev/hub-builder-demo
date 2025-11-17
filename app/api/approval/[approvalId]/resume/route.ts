@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getApprovalRecord } from '@/lib/approval/approval-store';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 /**

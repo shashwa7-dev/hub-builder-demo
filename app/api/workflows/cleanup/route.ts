@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAuthenticatedConvexClient, api } from '@/lib/convex/client';
-
+export const runtime = "edge";
 /**
  * DELETE /api/workflows/cleanup
  * Clean up workflows without userId (development/admin only)

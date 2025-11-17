@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { workflowToLangGraphJSON } from '@/lib/workflow/langgraph';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 /**

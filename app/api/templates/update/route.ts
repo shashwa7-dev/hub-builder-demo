@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAuthenticatedConvexClient, api, isConvexConfigured } from '@/lib/convex/client';
 import { listTemplates, getTemplate } from '@/lib/workflow/templates';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 /**

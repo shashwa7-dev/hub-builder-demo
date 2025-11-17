@@ -7,7 +7,7 @@ import {
 } from "@/lib/convex/client";
 import { LangGraphExecutor } from "@/lib/workflow/langgraph";
 import { validateApiKey, createUnauthorizedResponse } from "@/lib/api/auth";
-
+export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
 /**

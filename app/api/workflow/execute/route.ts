@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { LangGraphExecutor } from '@/lib/workflow/langgraph';
 import { Workflow } from '@/lib/workflow/types';
-
+export const runtime = "edge";
 /**
  * POST /api/workflow/execute
  * Execute a workflow and stream results via SSE

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { LangGraphExecutor } from '@/lib/workflow/langgraph';
 import { validateApiKey, createUnauthorizedResponse } from '@/lib/api/auth';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 export async function POST(

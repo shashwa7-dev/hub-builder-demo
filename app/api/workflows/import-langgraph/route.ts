@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { langGraphJSONToWorkflow } from '@/lib/workflow/langgraph';
 import { saveWorkflow } from '@/lib/workflow/storage';
 
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 /**
