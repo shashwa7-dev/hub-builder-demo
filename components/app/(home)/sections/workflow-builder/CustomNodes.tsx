@@ -205,14 +205,35 @@ export function CustomNode({ data, selected }: NodeProps) {
         />
       )}
 
-      {/* Render the label (icon + text) */}
+     {
+  nodeType === "mcp" && data?.toolName ? (
+    <div className="flex items-center gap-8">
+    <div
+    className={`w-32 h-32 rounded-8 ${getTextColor()} flex items-center justify-center flex-shrink-0`}
+  >
+    {data?.toolIcon ? (
+      <img
+                  className="w-24 h-24 bg-white rounded-2"
+                  //@ts-ignore
+                  src={data.toolIcon}
+                           //@ts-ignore
+        alt={data.toolName}
+      />
+    ) : (
+      <div className="w-16 h-16 bg-white rounded-2" />
+    )}
+  </div>
+
+      <span className={`text-sm font-medium ${getTextColor()}`}>
+        {data.toolName as React.ReactNode}
+      </span>
+    </div>
+  ) : (
     <div style={{ whiteSpace: "nowrap", color: getTextColor() }}>
-  {(
-    nodeType === "mcp" && data?.toolName
-      ? data.toolName
-      : data.label
-  ) as React.ReactNode}
-</div>
+      {data.label as React.ReactNode}
+    </div>
+  )
+}
       {/* Output handles - special cases for branching nodes */}
       {nodeType === 'if-else' ? (
         <>
