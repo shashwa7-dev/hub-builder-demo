@@ -1,3 +1,4 @@
+export const runtime = "edge";
 import { CreateOrUpdateWorkflowSchema } from "@/lib/workflow/schema";
 import { NextResponse } from "next/server";
 

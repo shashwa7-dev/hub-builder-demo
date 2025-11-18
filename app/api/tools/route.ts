@@ -1,3 +1,4 @@
+export const runtime = "edge";
 // app/api/tools/route.ts
 import { ToolsResponse } from "@/lib/tools/types";
 import { NextResponse } from "next/server";
