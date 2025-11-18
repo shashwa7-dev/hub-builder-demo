@@ -1922,7 +1922,7 @@ function WorkflowBuilderInner({
 
         <button
           onClick={handleSaveWorkflow}
-          className="px-20 py-8 bg-heat-100 hover:bg-heat-200 text-white rounded-8 text-body-medium font-medium transition-all active:scale-[0.98] flex items-center gap-8"
+          className="px-20 py-8 hover:bg-heat-200 text-white rounded-8 text-body-medium font-medium transition-all active:scale-[0.98] flex items-center gap-8 bg-heat-100"
         >
           <svg
             className="w-16 h-16"
