@@ -5,7 +5,6 @@ import { Roboto_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import ColorStyles from "@/components/shared/color-styles/color-styles";
 import Scrollbar from "@/components/ui/scrollbar";
-import { BigIntProvider } from "@/components/providers/BigIntProvider";
 import "styles/main.css";
 
 // const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
@@ -40,11 +39,11 @@ export default function RootLayout({
       <body
         className={`${GeistMono.variable} ${robotoMono.variable} font-sans text-accent-black bg-background-base overflow-x-clip`}
       >
-        <BigIntProvider>
+
           <main className="overflow-x-clip">{children}</main>
           <Scrollbar />
           <Toaster position="bottom-right" />
-        </BigIntProvider>
+
       </body>
     </html>
     //   </ConvexProviderWithClerk>

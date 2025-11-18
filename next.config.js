@@ -1,9 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  //cloudflare bug
-  experimental: {
-    runtime: "edge",
-  },
   images: {
     remotePatterns: [
       {
