@@ -209,7 +209,7 @@ export function CustomNode({ data, selected }: NodeProps) {
   nodeType === "mcp" && data?.toolName ? (
     <div className="flex items-center gap-8">
     <div
-    className={`w-32 h-32 rounded-8 ${getTextColor()} flex items-center justify-center flex-shrink-0`}
+    className={`w-32 h-32 rounded-8 ${getTextColor()} flex items-center justify-center flex-shrink-0 border`}
   >
     {data?.toolIcon ? (
       <img

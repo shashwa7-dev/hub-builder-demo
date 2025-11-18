@@ -28,7 +28,7 @@ export default function RootLayout({
     //   <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
     <html lang="en">
       <head>
-        <title>Open Agent Builder</title>
+        <title>Playhub Builder</title>
         <meta
           name="description"
           content="Build AI agents and workflows with visual programming"
