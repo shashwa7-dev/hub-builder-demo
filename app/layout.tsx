@@ -28,7 +28,7 @@ export default function RootLayout({
     //   <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
     <html lang="en">
       <head>
-        <title>Playhub Builder</title>
+        <title>PlayStudio</title>
         <meta
           name="description"
           content="Build AI agents and workflows with visual programming"
@@ -39,11 +39,9 @@ export default function RootLayout({
       <body
         className={`${GeistMono.variable} ${robotoMono.variable} font-sans text-accent-black bg-background-base overflow-x-clip`}
       >
-
-          <main className="overflow-x-clip">{children}</main>
-          <Scrollbar />
-          <Toaster position="bottom-right" />
-
+        <main className="overflow-x-clip">{children}</main>
+        <Scrollbar />
+        <Toaster position="bottom-right" />
       </body>
     </html>
     //   </ConvexProviderWithClerk>
