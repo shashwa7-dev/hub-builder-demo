@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "lsof -ti:3000,3001 | xargs kill -9 2>/dev/null || true && next dev",
     "dev:all": "concurrently \"npx convex dev\" \"npm run dev\"",
-    "build": "npx @cloudflare/next-on-pages build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "playwright test",
@@ -49,6 +49,7 @@
     "@langchain/openai": "^0.3.0",
     "@mendable/firecrawl-js": "^3.0.3",
     "@modelcontextprotocol/sdk": "^1.20.0",
+    "@opennextjs/cloudflare": "^1.12.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-collapsible": "^1.1.0",
@@ -119,6 +120,7 @@
     "postcss-nesting": "^13.0.2",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.20.6",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "wrangler": "^4.47.0"
   }
 }
