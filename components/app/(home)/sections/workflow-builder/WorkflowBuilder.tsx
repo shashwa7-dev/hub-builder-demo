@@ -64,6 +64,7 @@ import type { WorkflowNode, WorkflowEdge } from "@/lib/workflow/types";
 import { nodeTypes } from "./CustomNodes";
 import { detectDuplicateCredentials } from "@/lib/workflow/duplicate-detection";
 import { cleanupInvalidEdges } from "@/lib/workflow/edge-cleanup";
+import { useSaveWorkflow } from "@/lib/workflow/hooks/useSaveWF";
 
 interface WorkflowBuilderProps {
   onBack: () => void;
@@ -284,6 +285,16 @@ const autoLayoutNodes = (nodes: Node[], edges: Edge[]) => {
   return layoutNodes;
 };
 
+function extractMcpServerIds(nodes: any) {
+  if (!nodes) return [];
+
+  const ids = nodes
+    .filter((n) => n.type === "mcp" && n.data?.mcpServerId)
+    .map((n) => n.data.mcpServerId);
+
+  // remove duplicates
+  return [...ids];
+}
 function WorkflowBuilderInner({
   onBack,
   initialWorkflowId,
@@ -326,6 +337,7 @@ function WorkflowBuilderInner({
     description: "",
     onConfirm: () => {},
   });
+  const { saveWorkflow: upsetWF, loading: upsertingWF } = useSaveWorkflow();
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -1490,7 +1502,7 @@ function WorkflowBuilderInner({
     setShowTestEndpoint(true);
   }, [workflow, nodes, edges, saveWorkflow]);
 
-  const handleSaveWorkflow = useCallback(() => {
+  const handleSaveWorkflow = useCallback(async () => {
     if (!workflow) {
       toast.error("No workflow to save");
       return;
@@ -1508,12 +1520,28 @@ function WorkflowBuilderInner({
     }));
 
     console.log("💾 Saving", serializedNodes.length, "serialized nodes");
-    console.log("wfd", {
-      nodes: serializedNodes as unknown as WorkflowNode[],
-      edges: edges as unknown as WorkflowEdge[],
+
+    const tools = extractMcpServerIds(serializedNodes);
+    const payload = {
+      // id: workflow.id,
       name: workflow.name,
-      description: workflow.description,
-    });
+      description:
+        workflow.description ?? `default description for ${workflow.id}`,
+      tools: tools,
+    };
+
+    console.log(
+      "wfd",
+      {
+        nodes: serializedNodes as unknown as WorkflowNode[],
+        edges: edges as unknown as WorkflowEdge[],
+        name: workflow.name,
+        description: workflow.description,
+      },
+      workflow
+    );
+    //be reques
+    await upsetWF(payload);
     // Force immediate save with all current data
     saveWorkflow({
       nodes: serializedNodes as unknown as WorkflowNode[],
@@ -1909,7 +1937,7 @@ function WorkflowBuilderInner({
               d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
             />
           </svg>
-          Save
+          {upsertingWF ? "Saving" : "Save"}
         </button>
       </motion.div>
 

@@ -2,16 +2,13 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import {
-  Globe,
-  Brain,
-  Database,
-  Package,
-  Loader2,
-  ChevronDown,
-} from "lucide-react";
+import { Loader2 } from "lucide-react";
 import type { Node } from "@xyflow/react";
 import { toast } from "sonner";
+import { fetchTools } from "@/lib/tools/tools";
+import { ToolRecord, ToolsResponse } from "@/lib/tools/types";
+import Button from "@/components/ui/button";
+
 
 interface MCPPanelProps {
   node: Node | null;
@@ -32,51 +29,44 @@ export default function MCPPanel({
 }: MCPPanelProps) {
   const nodeData = node?.data as any;
 
-  // Fetch enabled MCP servers from central registry
-  const mcpServers: any = dummyMCPs;
-  // Store only the selected server ID
-  const [selectedServerId, setSelectedServerId] = useState<string | null>(
-    () => {
-      return nodeData?.mcpServerId || null;
-    }
+  const [tools, setTools] = useState<ToolRecord[]>([]);
+  const [loadingTools, setLoadingTools] = useState(true);
+
+  const [selectedServerId, setSelectedServerId] = useState<number | null>(
+    () => nodeData?.mcpServerId || null
   );
+  console.log("selected server", selectedServerId);
 
-  const [showDetails, setShowDetails] = useState(false);
-  const selectedServer = mcpServers?.find((s) => s._id === selectedServerId);
-
-  // Auto-save selected server ID (only in configure mode)
   useEffect(() => {
-    if (!node || mode === "add-to-agent") return;
-
-    const timeoutId = setTimeout(() => {
+    async function loadTools() {
       try {
-        onUpdate(node.id, {
-          mcpServerId: selectedServerId,
-        });
-      } catch (error) {
-        console.error("Error saving MCP server selection:", error);
-        toast.error("Failed to save MCP server selection", {
-          description:
-            error instanceof Error ? error.message : "Unable to save changes",
-        });
+        const res = await fetchTools();
+        setTools(res.data || []);
+      } catch (err) {
+        console.error(err);
+        toast.error("Failed to load tools");
+      } finally {
+        setLoadingTools(false);
       }
-    }, 500);
-
-    return () => clearTimeout(timeoutId);
-  }, [selectedServerId, node, onUpdate, mode]);
-
-  const getCategoryIcon = (category: string) => {
-    switch (category) {
-      case "web":
-        return <Globe className="w-16 h-16" />;
-      case "ai":
-        return <Brain className="w-16 h-16" />;
-      case "data":
-        return <Database className="w-16 h-16" />;
-      default:
-        return <Package className="w-16 h-16" />;
     }
-  };
+    loadTools();
+  }, []);
+
+  // Auto-save only in configure mode
+  // useEffect(() => {
+  //   if (!node || mode === "add-to-agent") return;
+
+  //   const timeoutId = setTimeout(() => {
+  //     try {
+  //       onUpdate(node.id, { mcpServerId: selectedServerId });
+  //     } catch (error) {
+  //       console.error("Error saving selection:", error);
+  //       toast.error("Failed to save MCP server selection");
+  //     }
+  //   }, 500);
+
+  //   return () => clearTimeout(timeoutId);
+  // }, [selectedServerId, node, onUpdate, mode]);
 
   return (
     <AnimatePresence>
@@ -114,175 +104,89 @@ export default function MCPPanel({
               </button>
             </div>
             <p className="text-sm text-black-alpha-48">
-              Select an MCP server from your registry to invoke its tools
+              Select an MCP tool from your registry
             </p>
           </div>
 
-          {/* Configuration */}
+          {/* Body */}
           <div className="p-20 space-y-20">
-            {/* Server Selector */}
+            {/* Tool Cards */}
             <div>
-              <label className="block text-sm font-medium text-black-alpha-48 mb-8">
-                MCP Server
-              </label>
+              <h3 className="text-sm font-medium text-accent-black mb-10">
+                Available Tools
+              </h3>
 
-              {!mcpServers || mcpServers.length === 0 ? (
-                <div className="p-16 bg-background-base rounded-12 border border-border-faint text-center">
-                  <p className="text-body-small text-black-alpha-48 mb-12">
-                    No MCP servers available in your registry
-                  </p>
-                  <button
-                    onClick={() => {
-                      onClose();
-                      onOpenSettings?.();
-                    }}
-                    className="px-16 py-8 bg-heat-100 hover:bg-heat-200 text-white rounded-8 text-xs font-medium transition-all"
-                  >
-                    Go to Settings
-                  </button>
+              {loadingTools ? (
+                <div className="flex items-center justify-center py-20 gap-2 text-label-medium">
+                  <Loader2 className="flex-shrink-0 w-15 h-15 animate-spin text-heat-100" />
+                  <p>Loading tools ...</p>
                 </div>
+              ) : tools.length === 0 ? (
+                <p className="text-xs text-black-alpha-48">
+                  No tools available.
+                </p>
               ) : (
-                <div className="space-y-8">
-                  <select
-                    value={selectedServerId || ""}
-                    onChange={(e) => {
-                      const serverId = e.target.value || null;
-                      setSelectedServerId(serverId);
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-16">
+                  {tools.map((item) => (
+                    <button
+                      key={item.tool.id}
+                      onClick={() => {
+                        setSelectedServerId(item.tool.id);
 
-                      // In add-to-agent mode, call the callback
-                      if (mode === "add-to-agent" && onAddToAgent && serverId) {
-                        const server = mcpServers.find(
-                          (s) => s.id === serverId
-                        );
-                        if (server) {
+                        if (mode === "add-to-agent" && onAddToAgent) {
                           onAddToAgent({
-                            mcpServerId: server.id,
-                            name: server.name,
-                            tools: server.tools || [],
+                            mcpServerId: item.tool.id,
+                            name: item.mcp.name,
+                            tools: item.tool || [],
                           });
-                          toast.success(`Added ${server.name} to agent`);
-                          setTimeout(() => onClose(), 1000);
+
+                          toast.success(`Added ${item.mcp.name} to agent`);
+                          setTimeout(() => onClose(), 800);
                         }
-                      }
-                    }}
-                    className="w-full px-14 py-10 bg-background-base border border-border-faint rounded-10 text-sm text-accent-black focus:outline-none focus:border-heat-100 transition-colors appearance-none cursor-pointer"
-                  >
-                    <option value="">Select an MCP server...</option>
-                    {mcpServers.map((server) => {
-                      const isFirecrawl =
-                        server.name === "Firecrawl" && server.isOfficial;
-                      return (
-                        <option key={server._id} value={server._id}>
-                          {server.name} {isFirecrawl && "(API Key Required)"}{" "}
-                          {server.tools && `(${server.tools.length} tools)`}
-                        </option>
-                      );
-                    })}
-                  </select>
-
-                  {selectedServer && (
-                    <div className="mt-12">
-                      {/* Server Info Card */}
-                      <div className="p-16 bg-background-base rounded-12 border border-border-faint">
-                        <div className="flex items-start gap-12">
-                          <div className={`text-heat-100`}>
-                            {getCategoryIcon(selectedServer.category)}
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-8 mb-4">
-                              <h4 className="text-sm font-medium text-accent-black">
-                                {selectedServer.name}
-                              </h4>
-                              {selectedServer.name === "Firecrawl" &&
-                                selectedServer.isOfficial && (
-                                  <span className="px-6 py-2 bg-heat-4 text-heat-100 rounded-6 text-xs border border-heat-100 font-medium">
-                                    API Key Required
-                                  </span>
-                                )}
-                            </div>
-                            {selectedServer.description && (
-                              <p className="text-xs text-black-alpha-48 mb-8">
-                                {selectedServer.description}
-                              </p>
-                            )}
-                            {selectedServer.name === "Firecrawl" &&
-                              selectedServer.isOfficial && (
-                                <a
-                                  href="https://www.firecrawl.dev/app/api-keys"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-xs text-heat-100 hover:text-heat-200 underline block mb-8"
-                                >
-                                  Get API key here →
-                                </a>
-                              )}
-                            <div className="flex items-center gap-12 text-xs">
-                              <span className="text-black-alpha-48">
-                                Category: {selectedServer.category}
-                              </span>
-                              {selectedServer.connectionStatus ===
-                                "connected" && (
-                                <span className="px-6 py-2 bg-heat-4 text-heat-100 rounded-6 border border-heat-100">
-                                  Connected
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                      }}
+                      className={`p-16 rounded-12 border transition-all text-left hover:border-heat-100 hover:shadow-sm ${
+                        selectedServerId === item.tool.id
+                          ? "border-heat-100 shadow bg-heat-4"
+                          : "border-border-faint"
+                      }`}
+                    >
+                      <div className="flex items-center gap-12 mb-5">
+                        <img
+                          src={`https://builder-dev.up.railway.app${item.mcp.imageUrl}`}
+                          alt={item.mcp.name}
+                          className="w-28 h-28"
+                        />
+                        <div>
+                          <h4 className="text-sm font-semibold text-accent-black">
+                            {item.tool.name}
+                          </h4>
+                          <p className="text-xs text-black-alpha-32">
+                            {item.mcp.name}
+                          </p>
                         </div>
-
-                        {/* Show/Hide Tools Button */}
-                        {selectedServer.tools &&
-                          selectedServer.tools.length > 0 && (
-                            <div className="mt-12">
-                              <button
-                                onClick={() => setShowDetails(!showDetails)}
-                                className="flex items-center gap-8 text-xs text-heat-100 hover:text-heat-200 font-medium"
-                              >
-                                <ChevronDown
-                                  className={`w-14 h-14 transition-transform ${
-                                    showDetails ? "rotate-180" : ""
-                                  }`}
-                                />
-                                {showDetails ? "Hide" : "Show"} Available Tools
-                                ({selectedServer.tools.length})
-                              </button>
-
-                              {/* Tools List */}
-                              <AnimatePresence>
-                                {showDetails && (
-                                  <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: "auto", opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    className="mt-8"
-                                  >
-                                    <div className="space-y-6">
-                                      {selectedServer.tools.map(
-                                        (tool: string) => (
-                                          <div
-                                            key={tool}
-                                            className="p-8 bg-accent-white rounded-6 border border-border-faint"
-                                          >
-                                            <code className="text-xs font-mono text-heat-100">
-                                              {tool}
-                                            </code>
-                                          </div>
-                                        )
-                                      )}
-                                    </div>
-                                  </motion.div>
-                                )}
-                              </AnimatePresence>
-                            </div>
-                          )}
                       </div>
-                    </div>
-                  )}
+
+                      <p className="text-xs text-black-alpha-48 line-clamp-3">
+                        {item.tool.description}
+                      </p>
+                    </button>
+                  ))}
                 </div>
+              )}
+              {selectedServerId && node?.id && !loadingTools && (
+                <Button
+                  className="mt-12"
+                  onClick={() => {
+                    onUpdate(node.id, { mcpServerId: selectedServerId });
+                    onClose();
+                  }}
+                >
+                  Save
+                </Button>
               )}
             </div>
 
-            {/* Add New Server Link */}
+            {/* Add New MCP */}
             <div className="pt-16 border-t border-border-faint">
               <p className="text-xs text-black-alpha-48 mb-8">
                 Need to add a new MCP server?
@@ -303,28 +207,3 @@ export default function MCPPanel({
     </AnimatePresence>
   );
 }
-
-export const dummyMCPs = [
-  {
-    id: "96c0cca7-8140-4cdd-85b5-e9e642373a71",
-    name: "getPolymarketMarkets",
-    description:
-      "Get data of all markets on Polymarket using Gamma API and filter using limit",
-    mcp: "Polymarket",
-    imageUrl: "/public/polymarket.png",
-    createdAt: "2025-11-10T17:46:50.789Z",
-    tools: ["browser_navigate", "browser_click", "browser_scrape"],
-    category: "web",
-  },
-  {
-    id: "a9ab5d27-5ebd-4a9a-8fc8-60ed9f493d42",
-    name: "getPolymarketMarketsByCategory",
-    description:
-      "Search and get active Polymarket markets by category (e.g., 'tennis', 'bitcoin', 'tech', 'politics', 'sports'). Use this when user wants to explore markets in a specific topic or category.",
-    mcp: "Polymarket",
-    imageUrl: "/public/polymarket.png",
-    createdAt: "2025-11-10T17:46:51.009Z",
-    tools: ["browser_navigate", "browser_click", "browser_scrape"],
-    category: "web",
-  },
-];
