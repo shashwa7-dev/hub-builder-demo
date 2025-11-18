@@ -8,9 +8,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
-    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "test": "playwright test",
     "test:ui": "playwright test --ui",
     "test:headed": "playwright test --headed",
@@ -108,7 +105,6 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "^1.12.0",
     "@playwright/test": "^1.56.0",
     "@types/node": "^20.10.4",
     "@types/react": "^19.0.5",

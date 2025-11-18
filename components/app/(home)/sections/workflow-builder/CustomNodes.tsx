@@ -168,6 +168,7 @@ export function CustomNode({ data, selected }: NodeProps) {
     );
   }
 
+
   return (
     <div
       className="relative"
@@ -205,10 +206,13 @@ export function CustomNode({ data, selected }: NodeProps) {
       )}
 
       {/* Render the label (icon + text) */}
-      <div style={{ whiteSpace: 'nowrap', color: getTextColor() }}>
-        {data.label as ReactNode}
-      </div>
-
+    <div style={{ whiteSpace: "nowrap", color: getTextColor() }}>
+  {(
+    nodeType === "mcp" && data?.toolName
+      ? data.toolName
+      : data.label
+  ) as React.ReactNode}
+</div>
       {/* Output handles - special cases for branching nodes */}
       {nodeType === 'if-else' ? (
         <>

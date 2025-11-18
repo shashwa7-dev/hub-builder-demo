@@ -32,8 +32,12 @@ export default function MCPPanel({
   const [tools, setTools] = useState<ToolRecord[]>([]);
   const [loadingTools, setLoadingTools] = useState(true);
 
+
   const [selectedServerId, setSelectedServerId] = useState<number | null>(
     () => nodeData?.mcpServerId || null
+  );
+  const [selectedServer, setSelectedServer] = useState<ToolRecord|null>(
+    null
   );
   console.log("selected server", selectedServerId);
 
@@ -132,7 +136,7 @@ export default function MCPPanel({
                       key={item.tool.id}
                       onClick={() => {
                         setSelectedServerId(item.tool.id);
-
+                        setSelectedServer(item);
                         if (mode === "add-to-agent" && onAddToAgent) {
                           onAddToAgent({
                             mcpServerId: item.tool.id,
@@ -173,11 +177,12 @@ export default function MCPPanel({
                   ))}
                 </div>
               )}
-              {selectedServerId && node?.id && !loadingTools && (
+              {selectedServer && node?.id && !loadingTools && (
                 <Button
                   className="mt-12"
                   onClick={() => {
-                    onUpdate(node.id, { mcpServerId: selectedServerId });
+                    onUpdate(node.id, { mcpServerId: selectedServer.tool.id, toolName: selectedServer.tool.name,
+                            toolIcon:`https://builder-dev.up.railway.app${selectedServer.mcp.imageUrl}`, });
                     onClose();
                   }}
                 >
