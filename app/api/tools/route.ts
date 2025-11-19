@@ -2,7 +2,7 @@
 import { ToolsResponse } from "@/lib/tools/types";
 import { NextResponse } from "next/server";
 
-const BASE_URL = "https://builder-dev.up.railway.app/workflow/tools";
+export const BASE_URL = "https://builder-dev.up.railway.app/workflow/tools";
 
 export async function GET(req: Request) {
   try {

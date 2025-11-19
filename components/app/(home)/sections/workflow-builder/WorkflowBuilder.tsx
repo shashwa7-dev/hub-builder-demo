@@ -35,6 +35,7 @@ import {
   MoreHorizontal,
   Server,
   MousePointer2,
+  Loader2,
 } from "lucide-react";
 import NodePanel from "./NodePanel";
 import MCPPanel from "./MCPPanel";
@@ -65,6 +66,7 @@ import { nodeTypes } from "./CustomNodes";
 import { detectDuplicateCredentials } from "@/lib/workflow/duplicate-detection";
 import { cleanupInvalidEdges } from "@/lib/workflow/edge-cleanup";
 import { useSaveWorkflow } from "@/lib/workflow/hooks/useSaveWF";
+import { useRouter } from "next/navigation";
 
 interface WorkflowBuilderProps {
   onBack: () => void;
@@ -303,9 +305,6 @@ function WorkflowBuilderInner({
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [initialized, setInitialized] = useState(false);
-  const [currentTemplateId, setCurrentTemplateId] = useState<string | null>(
-    initialTemplateId ?? null
-  );
 
   // Convex queries and mutations for templates
   const template = null;
@@ -337,7 +336,7 @@ function WorkflowBuilderInner({
     description: "",
     onConfirm: () => {},
   });
-  const { saveWorkflow: upsetWF, loading: upsertingWF } = useSaveWorkflow();
+  const { saveWorkflow: upsertWF, loading: upsertingWF } = useSaveWorkflow();
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -356,84 +355,11 @@ function WorkflowBuilderInner({
   );
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const { screenToFlowPosition, getNode, setCenter } = useReactFlow();
-
+  const router = useRouter();
   // Workflow management
-  const {
-    workflow,
-    convexId,
-    updateNodes,
-    updateEdges,
-    saveWorkflow,
-    saveWorkflowImmediate,
-    deleteWorkflow,
-    createNewWorkflow,
-  } = useWorkflow(initialWorkflowId || undefined);
-
-  // AUTO-SAVE DISABLED - Use manual Save button instead
-  // Smart auto-save: only save when nodes/edges actually change, with debounce
-  // const lastSavedNodesRef = useRef<string>('');
-  // const lastSavedEdgesRef = useRef<string>('');
-  // const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // useEffect(() => {
-  //   if (!initialized || !workflow) return;
-
-  //   const nodesJson = JSON.stringify(nodes);
-  //   const edgesJson = JSON.stringify(edges);
-
-  //   // Only save if something actually changed
-  //   if (nodesJson === lastSavedNodesRef.current && edgesJson === lastSavedEdgesRef.current) {
-  //     return;
-  //   }
-
-  //   // Clear previous timeout
-  //   if (autoSaveTimeoutRef.current) {
-  //     clearTimeout(autoSaveTimeoutRef.current);
-  //   }
-
-  //   // Debounced save
-  //   autoSaveTimeoutRef.current = setTimeout(async () => {
-  //     console.log('🔄 [AUTO-SYNC] Saving changes to Convex...', {
-  //       nodeCount: nodes.length,
-  //       edgeCount: edges.length,
-  //       isTemplate: workflow.isTemplate,
-  //       templateId: currentTemplateId,
-  //     });
-
-  //     // Update refs BEFORE saving to prevent loops
-  //     lastSavedNodesRef.current = nodesJson;
-  //     lastSavedEdgesRef.current = edgesJson;
-
-  //     // If this is a template-based workflow, also save to the template
-  //     if (workflow.isTemplate && currentTemplateId) {
-  //       try {
-  //         await updateTemplateStructure({
-  //           customId: currentTemplateId,
-  //           nodes: nodes.map(n => ({
-  //             ...n,
-  //             data: {
-  //               ...n.data,
-  //               nodeType: n.data?.nodeType || n.type,
-  //             }
-  //           })),
-  //           edges,
-  //         });
-  //         console.log('✅ Template structure updated in Convex');
-  //       } catch (error) {
-  //         console.error('Failed to update template structure:', error);
-  //       }
-  //     }
-
-  //     // Save to workflow (regular save)
-  //     saveWorkflow({ nodes, edges });
-  //   }, 1500); // 1.5 second debounce
-
-  //   return () => {
-  //     if (autoSaveTimeoutRef.current) {
-  //       clearTimeout(autoSaveTimeoutRef.current);
-  //     }
-  //   };
-  // }, [nodes, edges, initialized, currentTemplateId, updateTemplateStructure]); // Don't include workflow or saveWorkflow to prevent loops
+  const { workflow, updateNodes, saveWorkflow, loading, error } = useWorkflow(
+    initialWorkflowId || undefined
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -453,22 +379,22 @@ function WorkflowBuilderInner({
     setShowTestEndpoint(false); // Close API panel when switching workflows
   }, [workflow?.id]);
 
-  const handleDuplicateWorkflow = useCallback(() => {
-    if (!workflow) return;
-    const original = workflow;
-    const newWorkflow = createNewWorkflow();
-    setShowWorkflowMenu(false);
-    // Allow state to update before saving copied structure
-    setTimeout(() => {
-      saveWorkflow({
-        name: `${original.name || "Workflow"} Copy`,
-        description: original.description,
-        nodes: original.nodes,
-        edges: original.edges,
-      });
-      toast.success("Workflow duplicated");
-    }, 0);
-  }, [workflow, createNewWorkflow, saveWorkflow, setShowWorkflowMenu]);
+  // const handleDuplicateWorkflow = useCallback(() => {
+  //   if (!workflow) return;
+  //   const original = workflow;
+  //   const newWorkflow = createNewWorkflow();
+  //   setShowWorkflowMenu(false);
+  //   // Allow state to update before saving copied structure
+  //   setTimeout(() => {
+  //     saveWorkflow({
+  //       name: `${original.name || "Workflow"} Copy`,
+  //       description: original.description,
+  //       nodes: original.nodes,
+  //       edges: original.edges,
+  //     });
+  //     toast.success("Workflow duplicated");
+  //   }, 0);
+  // }, [workflow, createNewWorkflow, saveWorkflow, setShowWorkflowMenu]);
 
   const handleRenameWorkflow = useCallback(() => {
     setRenameTrigger((prev) => prev + 1);
@@ -545,21 +471,21 @@ function WorkflowBuilderInner({
     setShowWorkflowMenu,
   ]);
 
-  const confirmDeleteWorkflow = useCallback(() => {
-    if (!workflow) return;
-    setConfirmDialog({
-      isOpen: true,
-      title: "Delete Workflow",
-      description:
-        "This will permanently delete the current workflow. This action cannot be undone.",
-      variant: "danger",
-      onConfirm: () => {
-        deleteWorkflow(workflow.id);
-        toast.success("Workflow deleted");
-      },
-    });
-    setShowWorkflowMenu(false);
-  }, [workflow, deleteWorkflow, setConfirmDialog, setShowWorkflowMenu]);
+  // const confirmDeleteWorkflow = useCallback(() => {
+  //   if (!workflow) return;
+  //   setConfirmDialog({
+  //     isOpen: true,
+  //     title: "Delete Workflow",
+  //     description:
+  //       "This will permanently delete the current workflow. This action cannot be undone.",
+  //     variant: "danger",
+  //     onConfirm: () => {
+  //       deleteWorkflow(workflow.id);
+  //       toast.success("Workflow deleted");
+  //     },
+  //   });
+  //   setShowWorkflowMenu(false);
+  // }, [workflow, setConfirmDialog, setShowWorkflowMenu]);
   const {
     runWorkflow,
     stopWorkflow,
@@ -571,186 +497,55 @@ function WorkflowBuilderInner({
     resumeWorkflow,
   } = useWorkflowExecution();
 
+  console.log("wf", workflow);
   // Load template or workflow on mount
   useEffect(() => {
-    if (initialized) return;
+    if (!workflow) return;
 
-    if (initialTemplateId) {
-      // Check if template is loading from Convex
-      if (template === undefined) {
-        // Still loading from Convex
-        return;
-      }
+    const cleaned = cleanupInvalidEdges(workflow.nodes, workflow.edges);
 
-      // If template is null, it doesn't exist in Convex yet - seed templates
-      if (template === null) {
-        console.log("Template not found in Convex, seeding templates...");
-        seedTemplates()
-          .then(() => {
-            console.log("Templates seeded successfully");
-            // The component will re-render when the template query updates
-          })
-          .catch((err) => {
-            console.error("Failed to seed templates:", err);
-            toast.error("Failed to load template");
-          });
-        return;
-      }
+    const cleanedNodes = cleaned.nodes;
+    const cleanedEdges = cleaned.edges;
 
-      // if (template) {
-      //   console.log("Loading template from Convex:", template);
-
-      //   // Clean up any invalid edges in the template
-      //   const cleaned = cleanupInvalidEdges(template.nodes, template.edges);
-      //   const cleanedNodes = cleaned.nodes;
-      //   const cleanedEdges = cleaned.edges;
-
-      //   if (cleaned.removedCount > 0) {
-      //     console.warn(
-      //       `🧹 Removed ${cleaned.removedCount} invalid edge(s) from template`
-      //     );
-      //     toast.warning(
-      //       `Template had ${cleaned.removedCount} invalid connection(s)`,
-      //       {
-      //         description: "These have been automatically removed",
-      //       }
-      //     );
-      //   }
-
-      //   // Convert template nodes to React Flow format
-      //   const templateNodes = cleanedNodes.map((n: any) => {
-      //     const nodeData = n.data as any;
-      //     return {
-      //       ...n,
-      //       data: {
-      //         ...n.data,
-      //         label: createNodeLabel(
-      //           nodeData.nodeName || (nodeData.label as string),
-      //           getNodeColor(n.type),
-      //           n.type
-      //         ),
-      //       },
-      //     };
-      //   });
-
-      //   console.log(
-      //     "Template nodes with icons:",
-      //     templateNodes.map((n) => ({ id: n.id, label: n.data.label }))
-      //   );
-
-      //   // Apply auto-layout for even spacing
-      //   const layoutedNodes = autoLayoutNodes(
-      //     templateNodes as any,
-      //     cleanedEdges as any
-      //   );
-      //   setNodes(layoutedNodes as any);
-      //   setEdges(cleanedEdges as any);
-
-      //   // Reset node ID counter based on loaded nodes to prevent duplicates
-      //   resetNodeIdCounter(layoutedNodes as any);
-
-      //   // Save template as a new workflow with all node data intact
-      //   // Ensure nodes have proper nodeType for LangGraph compatibility
-      //   const workflowNodes = template.nodes.map((n: any) => ({
-      //     ...n,
-      //     data: {
-      //       ...n.data,
-      //       nodeType: n.data.nodeType || n.type, // Ensure nodeType is set
-      //     },
-      //   }));
-
-      //   // Generate a unique workflow ID for this template instance
-      //   const workflowId = `workflow_${Date.now()}_${template.id}`;
-      //   console.log("wf to save", {
-      //     id: workflowId,
-      //     name: "draft wf",
-      //     description: "draft wf desc",
-      //     nodes: workflowNodes,
-      //     edges: template.edges,
-      //   });
-      //   // saveWorkflow({
-      //   //   id: workflowId,
-      //   //   name: template.name,
-      //   //   description: template.description,
-      //   //   nodes: workflowNodes,
-      //   //   edges: template.edges,
-      //   // });
-
-      //   setInitialized(true);
-      // }
-    } else if (initialWorkflowId && workflow && !initialized) {
-      // Use workflow data from useWorkflow hook (loaded via API)
-      console.log("Loading workflow from hook:", {
-        id: workflow.id,
-        name: workflow.name,
-        nodeCount: workflow.nodes?.length,
-        nodes: workflow.nodes?.map((n: any) => ({ id: n.id, type: n.type })),
-      });
-
-      // Clean up any invalid edges before rendering
-      const cleaned = cleanupInvalidEdges(workflow.nodes, workflow.edges);
-      const cleanedNodes = cleaned.nodes;
-      const cleanedEdges = cleaned.edges;
-
-      if (cleaned.removedCount > 0) {
-        console.warn(
-          `🧹 Removed ${cleaned.removedCount} invalid edge(s) from workflow`
-        );
-        toast.warning(
-          `Workflow had ${cleaned.removedCount} invalid connection(s)`,
-          {
-            description: "These have been automatically removed",
-          }
-        );
-      }
-
-      // Convert workflow nodes to React Flow format
-      const workflowNodes = cleanedNodes.map((n) => {
-        const nodeData = n.data as any;
-        // Get the label text (not React element)
-        const labelText = nodeData.nodeName || nodeData.label || n.type;
-
-        return {
-          ...n,
-          data: {
-            ...n.data,
-            // Create the label JSX element
-            label: createNodeLabel(labelText, getNodeColor(n.type), n.type),
-          },
-        };
-      });
-
-      // Apply auto-layout for even spacing
-      const layoutedNodes = autoLayoutNodes(
-        workflowNodes as any,
-        cleanedEdges as any
+    if (cleaned.removedCount > 0) {
+      toast.warning(
+        `Workflow had ${cleaned.removedCount} invalid connection(s)`,
+        {
+          description: "These have been automatically removed",
+        }
       );
-      console.log("Setting nodes to:", layoutedNodes.length, "nodes");
-      setNodes(layoutedNodes as any);
-      setEdges(cleanedEdges as any);
-
-      // Reset node ID counter based on loaded nodes to prevent duplicates
-      resetNodeIdCounter(layoutedNodes as any);
-
-      setInitialized(true);
-    } else if (!initialized && !initialTemplateId && !initialWorkflowId) {
-      setInitialized(true);
-      // For new workflows, don't select any node by default
-      // User can click the start node or drag new nodes to build their workflow
     }
-  }, [
-    initialTemplateId,
-    initialWorkflowId,
-    initialized,
-    setNodes,
-    setEdges,
-    saveWorkflow,
-    template,
-    seedTemplates,
-    workflow,
-  ]);
 
-  const createNodeLabel = (label: string, color: string, nodeType?: string) => {
+    const rfNodes = cleanedNodes.map((n) => {
+      const labelText = n.data?.nodeName || n.data?.label || n.type;
+
+      return {
+        ...n,
+        data: {
+          ...n.data,
+          label: createNodeLabel(
+            labelText,
+            getNodeColor(n.type),
+            n.type,
+            n.data
+          ),
+        },
+      };
+    });
+
+    const layoutedNodes = autoLayoutNodes(rfNodes, cleanedEdges);
+
+    setNodes(layoutedNodes);
+    setEdges(cleanedEdges);
+
+    resetNodeIdCounter(layoutedNodes);
+  }, [workflow]);
+  const createNodeLabel = (
+    label: string,
+    color: string,
+    nodeType?: string,
+    data?: any
+  ) => {
     // Get icon for this node type
     const nodeCategory = nodeCategories.find((cat) =>
       cat.nodes.some((n) => n.type === nodeType || n.label === label)
@@ -773,7 +568,29 @@ function WorkflowBuilderInner({
       return "text-[#18181b]"; // Default dark text
     };
 
-    return (
+    return nodeType === "mcp" && data?.toolName ? (
+      <div className="flex items-center gap-8">
+        <div
+          className={`w-32 h-32 rounded-8 ${getTextColor()} flex items-center justify-center flex-shrink-0 border`}
+        >
+          {data?.toolIcon ? (
+            <img
+              className="w-24 h-24 bg-white rounded-2"
+              //@ts-ignore
+              src={data.toolIcon}
+              //@ts-ignore
+              alt={data.toolName}
+            />
+          ) : (
+            <div className="w-16 h-16 bg-white rounded-2" />
+          )}
+        </div>
+
+        <span className={`text-sm font-medium ${getTextColor()}`}>
+          {data.toolName as React.ReactNode}
+        </span>
+      </div>
+    ) : (
       <div className="flex items-center gap-8">
         <div
           className={`w-32 h-32 rounded-8 ${color} flex items-center justify-center flex-shrink-0`}
@@ -854,67 +671,6 @@ function WorkflowBuilderInner({
         clearTimeout(edgesSaveTimeoutRef.current);
     }
   }, [isRunning]);
-
-  // AUTO-SAVE DISABLED - Use manual Save button instead
-  // Only auto-save nodes when NOT running and after a significant delay
-  // This prevents saves triggered by execution state changes
-  // useEffect(() => {
-  //   // Skip auto-save during initialization or execution
-  //   // Note: initialTemplateId is cleared after creating the workflow, so don't check it here
-  //   if (!initialized || !workflow || nodes.length === 0 || isRunning || currentNodeId) {
-  //     console.log('⏭️ Skipping node auto-save:', {
-  //       initialized,
-  //       hasWorkflow: !!workflow,
-  //       nodeCount: nodes.length,
-  //       isRunning,
-  //       currentNodeId
-  //     });
-  //     return;
-  //   }
-
-  //   // Only auto-save if user has made manual changes (not from template loading)
-  //   // Check if all required nodes are present before saving
-  //   const hasStartNode = nodes.some(n => n.type === 'start' || n.id === 'start');
-  //   if (!hasStartNode) {
-  //     console.warn('⚠️ Skipping auto-save: missing start node');
-  //     return;
-  //   }
-
-  //   console.log('✅ Node auto-save scheduled for', nodes.length, 'nodes');
-
-  //   if (nodesSaveTimeoutRef.current) clearTimeout(nodesSaveTimeoutRef.current);
-  //   nodesSaveTimeoutRef.current = setTimeout(() => {
-  //     console.log('💾 Executing node auto-save NOW');
-  //     updateNodes(nodes.map(n => ({
-  //       ...n,
-  //       type: n.type || 'default',
-  //       data: {
-  //         ...n.data,
-  //         label: typeof n.data.label === 'string' ? n.data.label : 'Node',
-  //         // Preserve nodeType for LangGraph compatibility
-  //         nodeType: n.data.nodeType || n.type,
-  //       },
-  //     })) as any);
-  //   }, 2000); // Increased delay to 2 seconds to reduce save frequency
-  //   return () => {
-  //     if (nodesSaveTimeoutRef.current) clearTimeout(nodesSaveTimeoutRef.current);
-  //   };
-  // }, [nodes, workflow, isRunning, currentNodeId, updateNodes, initialized, initialTemplateId]);
-
-  // useEffect(() => {
-  //   // Skip auto-save during initialization or execution
-  //   if (!initialized || !workflow || edges.length === 0 || isRunning || currentNodeId) {
-  //     return;
-  //   }
-
-  //   if (edgesSaveTimeoutRef.current) clearTimeout(edgesSaveTimeoutRef.current);
-  //   edgesSaveTimeoutRef.current = setTimeout(() => {
-  //     updateEdges(edges as any);
-  //   }, 2000); // Increased delay to 2 seconds to reduce save frequency
-  //   return () => {
-  //     if (edgesSaveTimeoutRef.current) clearTimeout(edgesSaveTimeoutRef.current);
-  //   };
-  // }, [edges, workflow, isRunning, currentNodeId, updateEdges, initialized, initialTemplateId]);
 
   // Update node visual states during execution and add IO badges
   useEffect(() => {
@@ -1417,90 +1173,90 @@ function WorkflowBuilderInner({
     handleAutoArrange,
   ]);
 
-  const handleRunWithInput = useCallback(
-    async (input: string) => {
-      console.log("📍 handleRunWithInput called with input:", input);
+  // const handleRunWithInput = useCallback(
+  //   async (input: string) => {
+  //     console.log("📍 handleRunWithInput called with input:", input);
 
-      if (!workflow) {
-        console.error("❌ No workflow to run");
-        return;
-      }
+  //     if (!workflow) {
+  //       console.error("❌ No workflow to run");
+  //       return;
+  //     }
 
-      console.log("✅ Workflow exists:", workflow.name);
+  //     console.log("✅ Workflow exists:", workflow.name);
 
-      // Save the workflow before running to ensure it exists in Convex
-      console.log("💾 Saving workflow before execution...");
-      toast.info("Saving workflow...", { duration: 1000 });
+  //     // Save the workflow before running to ensure it exists in Convex
+  //     console.log("💾 Saving workflow before execution...");
+  //     toast.info("Saving workflow...", { duration: 1000 });
 
-      const saveSuccess = await saveWorkflowImmediate({
-        nodes: nodes.map((n) => ({
-          ...n,
-          type: n.type || "default",
-          data: {
-            ...n.data,
-            label: typeof n.data.label === "string" ? n.data.label : "Node",
-            nodeType: n.data.nodeType || n.type,
-          },
-        })) as any,
-        edges: edges as any,
-      });
+  //     const saveSuccess = await saveWorkflowImmediate({
+  //       nodes: nodes.map((n) => ({
+  //         ...n,
+  //         type: n.type || "default",
+  //         data: {
+  //           ...n.data,
+  //           label: typeof n.data.label === "string" ? n.data.label : "Node",
+  //           nodeType: n.data.nodeType || n.type,
+  //         },
+  //       })) as any,
+  //       edges: edges as any,
+  //     });
 
-      if (!saveSuccess) {
-        toast.error("Failed to save workflow", {
-          description: "Cannot run workflow until it is saved",
-        });
-        return;
-      }
+  //     if (!saveSuccess) {
+  //       toast.error("Failed to save workflow", {
+  //         description: "Cannot run workflow until it is saved",
+  //       });
+  //       return;
+  //     }
 
-      // Create a fresh workflow object with current nodes/edges
-      const currentWorkflow = {
-        ...workflow,
-        nodes: nodes.map((n) => ({
-          id: n.id,
-          type: n.type,
-          position: n.position,
-          data: n.data,
-        })) as any,
-        edges: edges.map((e) => ({
-          id: e.id,
-          source: e.source,
-          target: e.target,
-          sourceHandle: e.sourceHandle,
-          targetHandle: e.targetHandle,
-          label: e.label,
-        })) as any,
-      };
+  //     // Create a fresh workflow object with current nodes/edges
+  //     const currentWorkflow = {
+  //       ...workflow,
+  //       nodes: nodes.map((n) => ({
+  //         id: n.id,
+  //         type: n.type,
+  //         position: n.position,
+  //         data: n.data,
+  //       })) as any,
+  //       edges: edges.map((e) => ({
+  //         id: e.id,
+  //         source: e.source,
+  //         target: e.target,
+  //         sourceHandle: e.sourceHandle,
+  //         targetHandle: e.targetHandle,
+  //         label: e.label,
+  //       })) as any,
+  //     };
 
-      console.log(
-        "🏃 Running workflow with",
-        currentWorkflow.nodes.length,
-        "nodes"
-      );
-      await runWorkflow(currentWorkflow, input);
-    },
-    [workflow, nodes, edges, runWorkflow, saveWorkflowImmediate]
-  );
+  //     console.log(
+  //       "🏃 Running workflow with",
+  //       currentWorkflow.nodes.length,
+  //       "nodes"
+  //     );
+  //     await runWorkflow(currentWorkflow, input);
+  //   },
+  //   [workflow, nodes, edges, runWorkflow, saveWorkflowImmediate]
+  // );
 
-  const handleShowTestAPI = useCallback(() => {
-    // Save workflow before opening API panel
-    if (workflow) {
-      saveWorkflow({
-        nodes: nodes.map((n) => ({
-          ...n,
-          type: n.type || "default",
-          data: {
-            ...n.data,
-            label: typeof n.data.label === "string" ? n.data.label : "Node",
-          },
-        })) as any,
-        edges: edges as any,
-      });
-    }
-    setShowPreview(false);
-    setShowExecution(false);
-    setSelectedNode(null); // Close node panel
-    setShowTestEndpoint(true);
-  }, [workflow, nodes, edges, saveWorkflow]);
+  // const handleShowTestAPI = useCallback(() => {
+  //   // Save workflow before opening API panel
+  //   if (workflow) {
+  //     saveWorkflow({
+  //       nodes: nodes.map((n) => ({
+  //         ...n,
+  //         type: n.type || "default",
+  //         data: {
+  //           ...n.data,
+  //           label: typeof n.data.label === "string" ? n.data.label : "Node",
+  //         },
+  //       })) as any,
+  //       edges: edges as any,
+  //     });
+  //   }
+  //   setShowPreview(false);
+  //   setShowExecution(false);
+  //   setSelectedNode(null); // Close node panel
+  //   setShowTestEndpoint(true);
+  // }, [workflow, nodes, edges, saveWorkflow]);
 
   const handleSaveWorkflow = useCallback(async () => {
     if (!workflow) {
@@ -1523,37 +1279,19 @@ function WorkflowBuilderInner({
 
     const tools = extractMcpServerIds(serializedNodes);
     const payload = {
-      // id: workflow.id,
+      id: workflow.id?.includes("workflow") ? undefined : workflow.id,
       name: workflow.name,
       description:
         workflow.description ?? `default description for ${workflow.id}`,
       tools: tools,
     };
 
-    console.log(
-      "wfd",
-      {
-        nodes: serializedNodes as unknown as WorkflowNode[],
-        edges: edges as unknown as WorkflowEdge[],
-        name: workflow.name,
-        description: workflow.description,
-      },
-      workflow
-    );
     //be reques
-    await upsetWF(payload);
-    // Force immediate save with all current data
-    saveWorkflow({
-      nodes: serializedNodes as unknown as WorkflowNode[],
-      edges: edges as unknown as WorkflowEdge[],
-      name: workflow.name,
-      description: workflow.description,
-    });
-
-    toast.success("Workflow saved", {
-      description: `${nodes.length} nodes, ${edges.length} connections saved to Convex`,
-    });
-  }, [workflow, nodes, edges, saveWorkflow]);
+    const res = await upsertWF(payload);
+    if (res?.[0]?.id) {
+      router.push(`/workflows/${res?.[0]?.id}`);
+    }
+  }, [workflow, nodes, edges]);
 
   const handleUpdateNodeData = useCallback(
     (nodeId: string, data: any) => {
@@ -1655,6 +1393,25 @@ function WorkflowBuilderInner({
     );
   }, [nodes.length]); // Only re-run when node count changes
 
+  useEffect(() => {
+    if (error) {
+      toast.error("Workflow not found!");
+      router.replace("/");
+    }
+  }, [error, router]);
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center">
+        <div className="flex items-center justify-center gap-2">
+          <Loader2 className="w-24 h-24 animate-spin text-heat-100" />
+          <p className="italic">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+  if (error) return null;
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -1685,20 +1442,20 @@ function WorkflowBuilderInner({
               onClick={() => {
                 // Save workflow when switching to production
                 if (workflow) {
-                  saveWorkflow({
-                    nodes: nodes.map((n) => ({
-                      ...n,
-                      type: n.type || "default",
-                      data: {
-                        ...n.data,
-                        label:
-                          typeof n.data.label === "string"
-                            ? n.data.label
-                            : "Node",
-                      },
-                    })) as any,
-                    edges: edges as any,
-                  });
+                  // saveWorkflow({
+                  //   nodes: nodes.map((n) => ({
+                  //     ...n,
+                  //     type: n.type || "default",
+                  //     data: {
+                  //       ...n.data,
+                  //       label:
+                  //         typeof n.data.label === "string"
+                  //           ? n.data.label
+                  //           : "Node",
+                  //     },
+                  //   })) as any,
+                  //   edges: edges as any,
+                  // });
                 }
                 setEnvironment("production");
               }}
@@ -1780,19 +1537,19 @@ function WorkflowBuilderInner({
           </button>
           {showWorkflowMenu && (
             <div className="absolute right-0 mt-4 w-200 bg-accent-white border border-border-faint rounded-12 shadow-lg z-50 overflow-hidden">
-              <button
+              {/* <button
                 onClick={handleDuplicateWorkflow}
                 className="w-full px-16 py-10 text-left text-body-small hover:bg-black-alpha-4 transition-colors"
               >
                 Duplicate workflow
-              </button>
+              </button> */}
               <button
                 onClick={handleSaveWorkflowImmediate}
                 className="w-full px-16 py-10 text-left text-body-small hover:bg-black-alpha-4 transition-colors"
               >
                 Save workflow
               </button>
-              <button
+              {/* <button
                 onClick={() => {
                   if (!convexId) {
                     toast.error("Please save the workflow first", {
@@ -1807,7 +1564,7 @@ function WorkflowBuilderInner({
                 className="w-full px-16 py-10 text-left text-body-small hover:bg-black-alpha-4 transition-colors border-b border-border-faint"
               >
                 Save as Template
-              </button>
+              </button> */}
               <button
                 onClick={handleClearCanvas}
                 className="w-full px-16 py-10 text-left text-body-small hover:bg-black-alpha-4 transition-colors"
@@ -1820,12 +1577,12 @@ function WorkflowBuilderInner({
               >
                 Rename workflow
               </button>
-              <button
+              {/* <button
                 onClick={confirmDeleteWorkflow}
                 className="w-full px-16 py-10 text-left text-body-small text-red-600 hover:bg-red-50 transition-colors"
               >
                 Delete workflow
-              </button>
+              </button> */}
             </div>
           )}
         </div>
@@ -1855,7 +1612,7 @@ function WorkflowBuilderInner({
           </svg>
           Settings
         </button>
-        {environment === "production" && (
+        {/* {environment === "production" && (
           <button
             onClick={handleShowTestAPI}
             className="px-16 py-8 bg-accent-white hover:bg-black-alpha-4 border border-border-faint rounded-8 text-body-medium text-accent-black transition-colors flex items-center gap-8"
@@ -1864,7 +1621,7 @@ function WorkflowBuilderInner({
             <Server className="w-16 h-16" strokeWidth={2} />
             API
           </button>
-        )}
+        )} */}
         {!isRunning ? (
           <button
             onClick={handlePreview}
@@ -2093,7 +1850,7 @@ function WorkflowBuilderInner({
             nodeResults={nodeResults}
             isRunning={isRunning}
             currentNodeId={currentNodeId}
-            onRun={handleRunWithInput}
+            onRun={() => {}}
             onResumePendingAuth={resumeWorkflow}
             onClose={() => setShowExecution(false)}
             environment={environment}
@@ -2226,12 +1983,12 @@ function WorkflowBuilderInner({
       />
 
       {/* Save as Template Modal */}
-      <SaveAsTemplateModal
+      {/* <SaveAsTemplateModal
         isOpen={showSaveAsTemplateModal}
         onClose={() => setShowSaveAsTemplateModal(false)}
         workflowId={convexId || ""}
         workflowName={workflow?.name || "Workflow"}
-      />
+      /> */}
 
       {/* Coming Soon Modal */}
       {showComingSoonModal && (

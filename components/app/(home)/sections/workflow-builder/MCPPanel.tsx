@@ -9,7 +9,6 @@ import { fetchTools } from "@/lib/tools/tools";
 import { ToolRecord, ToolsResponse } from "@/lib/tools/types";
 import Button from "@/components/ui/button";
 
-
 interface MCPPanelProps {
   node: Node | null;
   onClose: () => void;
@@ -31,7 +30,6 @@ export default function MCPPanel({
 
   const [tools, setTools] = useState<ToolRecord[]>([]);
   const [loadingTools, setLoadingTools] = useState(true);
-
 
   const [selectedServerId, setSelectedServerId] = useState<number | null>(
     () => nodeData?.mcpServerId || null
