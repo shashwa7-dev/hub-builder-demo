@@ -68,6 +68,10 @@ import { cleanupInvalidEdges } from "@/lib/workflow/edge-cleanup";
 import { useSaveWorkflow } from "@/lib/workflow/hooks/useSaveWF";
 import { useRouter } from "next/navigation";
 import ChatInput from "./PromptInput";
+import ExecutionStatus from "./ExecuteWF";
+import ExecutionStatusPanel from "./ExecuteWF";
+import { useWorkflowStatus } from "@/hooks/useWorkflowStatus";
+import { extractToolId } from "@/lib/workflow/validation";
 
 interface WorkflowBuilderProps {
   onBack: () => void;
@@ -361,7 +365,9 @@ function WorkflowBuilderInner({
   const { workflow, updateNodes, saveWorkflow, loading, error } = useWorkflow(
     initialWorkflowId || undefined
   );
-
+  const { data: wfStatusData, hasValidData } = useWorkflowStatus(
+    workflow?.id?.includes("workflow") ? undefined : workflow?.id
+  );
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -498,7 +504,6 @@ function WorkflowBuilderInner({
     resumeWorkflow,
   } = useWorkflowExecution();
 
-  console.log("wf", workflow);
   // Load template or workflow on mount
   useEffect(() => {
     if (!workflow) return;
@@ -1400,7 +1405,94 @@ function WorkflowBuilderInner({
       router.replace("/");
     }
   }, [error, router]);
+  useEffect(() => {
+    if (!hasValidData || !wfStatusData) return;
 
+    if (wfStatusData?.status !== "completed") {
+      setShowExecution(true);
+    }
+    const stepMap = new Map(
+      wfStatusData.steps.map((s) => [Number(s.toolId), s])
+    );
+
+    setNodes((nds) => {
+      return nds.map((node) => {
+        //@ts-ignore
+        const step = stepMap.get(node.data.mcpServerId);
+        let nextClassName = "";
+        let isRunning = false;
+        let executionStatus: any = undefined;
+
+        if (step) {
+          executionStatus = step.status;
+
+          if (
+            step.toolId ===
+              wfStatusData.steps[wfStatusData.currentStep - 1].toolId &&
+            step.status !== "failed" &&
+            step.status !== "completed"
+          ) {
+            nextClassName = "executing-node";
+            isRunning = true;
+          } else if (step.status === "completed") {
+            nextClassName = "completed-node";
+          } else if (step.status === "failed") {
+            nextClassName = "failed-node";
+          }
+        }
+
+        const shouldUpdate =
+          node.className !== nextClassName ||
+          (node.data as any)?.isRunning !== isRunning ||
+          (node.data as any)?.executionStatus !== executionStatus;
+
+        if (!shouldUpdate) return node;
+
+        return {
+          ...node,
+          className: nextClassName,
+          data: {
+            ...node.data,
+            isRunning,
+            executionStatus,
+          },
+        };
+      });
+    });
+
+    // setEdges((eds) => {
+    //   return eds.map((edge) => {
+    //     const srcStep = stepMap.get(extractToolId(edge.source));
+    //     const tgtStep = stepMap.get(extractToolId(edge.target));
+
+    //     const isActive =
+    //       srcStep?.status === "completed" && tgtStep?.status === "running";
+
+    //     const nextClassName = isActive ? "active-edge" : "";
+    //     const nextStroke = isActive ? "#FA5D19" : "#d1d5db";
+    //     const nextWidth = isActive ? 2 : 1;
+
+    //     const changed =
+    //       edge.className !== nextClassName ||
+    //       edge.style?.stroke !== nextStroke ||
+    //       edge.style?.strokeWidth !== nextWidth ||
+    //       !!edge.animated !== isActive;
+
+    //     if (!changed) return edge;
+
+    //     return {
+    //       ...edge,
+    //       className: nextClassName,
+    //       animated: isActive,
+    //       style: {
+    //         ...edge.style,
+    //         stroke: nextStroke,
+    //         strokeWidth: nextWidth,
+    //       },
+    //     };
+    //   });
+    // });
+  }, [hasValidData, wfStatusData]);
   if (loading) {
     return (
       <div className="h-screen w-screen flex items-center justify-center">
@@ -1420,7 +1512,6 @@ function WorkflowBuilderInner({
       transition={{ duration: 0.5 }}
       className="fixed inset-0 bg-background-base flex flex-col"
     >
-      
       {/* Workflow Name Editor */}
       <WorkflowNameEditor
         workflow={workflow}
@@ -1818,6 +1909,12 @@ function WorkflowBuilderInner({
         </motion.main>
 
         {/* Right Side Panels */}
+        {showExecution && wfStatusData ? (
+          <ExecutionStatusPanel
+            data={wfStatusData}
+            onClose={() => setShowExecution(false)}
+          />
+        ) : null}
         {showTestEndpoint && workflow ? (
           <TestEndpointPanel
             key={workflow.id}
@@ -1833,31 +1930,6 @@ function WorkflowBuilderInner({
             }}
             environment={environment}
             onClose={() => setShowTestEndpoint(false)}
-          />
-        ) : showExecution ? (
-          <ExecutionPanel
-            workflow={
-              workflow
-                ? {
-                    ...workflow,
-                    nodes: nodes.map((n) => ({
-                      id: n.id,
-                      type: n.type,
-                      position: n.position,
-                      data: n.data,
-                    })) as any,
-                  }
-                : null
-            }
-            execution={execution}
-            nodeResults={nodeResults}
-            isRunning={isRunning}
-            currentNodeId={currentNodeId}
-            onRun={() => {}}
-            onResumePendingAuth={resumeWorkflow}
-            onClose={() => setShowExecution(false)}
-            environment={environment}
-            pendingAuth={pendingAuth}
           />
         ) : showPreview ? (
           <PreviewPanel
