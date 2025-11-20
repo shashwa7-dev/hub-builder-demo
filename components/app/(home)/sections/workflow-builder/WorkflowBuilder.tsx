@@ -67,6 +67,7 @@ import { detectDuplicateCredentials } from "@/lib/workflow/duplicate-detection";
 import { cleanupInvalidEdges } from "@/lib/workflow/edge-cleanup";
 import { useSaveWorkflow } from "@/lib/workflow/hooks/useSaveWF";
 import { useRouter } from "next/navigation";
+import ChatInput from "./PromptInput";
 
 interface WorkflowBuilderProps {
   onBack: () => void;
@@ -1419,6 +1420,7 @@ function WorkflowBuilderInner({
       transition={{ duration: 0.5 }}
       className="fixed inset-0 bg-background-base flex flex-col"
     >
+      
       {/* Workflow Name Editor */}
       <WorkflowNameEditor
         workflow={workflow}
@@ -1699,6 +1701,7 @@ function WorkflowBuilderInner({
       </motion.div>
 
       <div className="flex flex-1">
+        <ChatInput />
         {/* Left Sidebar */}
         <motion.aside
           initial={{ x: -300, opacity: 0 }}
