@@ -9,6 +9,7 @@ export interface Step {
   toolDescription: string;
   mcpName: string;
   mcpImageUrl: string;
+  result?: any;
 }
 
 export interface WorkflowStatus {
@@ -28,7 +29,7 @@ export function useWorkflowStatus(workflowId?: string) {
   const [hasValidData, setHasValidData] = useState(false);
 
   const fetchStatus = async (controller?: AbortController) => {
-    if (!workflowId) return; // ⛔ skip fetch
+    if (!workflowId) return;
 
     try {
       const res = await fetch(

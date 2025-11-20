@@ -1718,6 +1718,7 @@ function WorkflowBuilderInner({
         {!isRunning ? (
           <button
             onClick={handlePreview}
+            disabled={!hasValidData}
             className={`px-16 py-8 border rounded-8 text-body-medium transition-colors flex items-center gap-8 ${
               showExecution
                 ? "bg-heat-100 text-white border-heat-100"
