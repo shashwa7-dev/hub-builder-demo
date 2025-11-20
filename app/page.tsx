@@ -32,7 +32,19 @@ function StyleGuidePageContent() {
             <WorkflowItemSkeleton />
           </div>
         ) : workflows_data?.data.length === 0 ? (
-          <p className="text-xs text-black-alpha-48">No workflow available.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-16">
+            <button
+              onClick={() => {
+                router.push(`/workflows`);
+              }}
+              className={`p-16 rounded-12 border transition-all text-left hover:border-heat-100 hover:shadow-sm border-border-faint`}
+            >
+              <div className="mb-5 flex flex-col items-center justify-center gap-2">
+                <BadgePlus className="w-20 h-20" />
+                <p className="text-sm">Create New Workflow</p>
+              </div>
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-16">
             <button
